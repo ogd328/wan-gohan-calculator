@@ -1,0 +1,18 @@
+# macOS
+.DS_Store
+
+# Chrome headless temp profiles / screenshots
+.chrome-*
+live-check.png
+
+# Node
+node_modules/
+npm-debug.log*
+
+# Logs
+*.log
+
+# Editor / OS
+.idea/
+.vscode/
+*.swp

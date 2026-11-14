@@ -1,0 +1,2185 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>わんごはん計算機｜愛犬の体重管理とフード・おやつ量</title>
+<meta name="description" content="愛犬の犬種・現在体重・目標体重から、1日にあげていいフードとおやつの量を計算。手持ちのフードのカロリーがわからないときは、犬種に合った代表的なフード候補も表示します。体重の記録グラフつき。">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%90%B6%3C/text%3E%3C/svg%3E">
+<style>
+/* ============================================================
+   base
+   ============================================================ */
+:root{
+  --bg:#fdf8f2;
+  --ink:#3b2a21;
+  --ink-soft:#7a6558;
+  --ink-mute:#a08d7e;
+  --line:#f0e2d5;
+  --accent:#ef7d3e;
+  --accent-deep:#d9622a;
+  --accent-soft:#fff3e8;
+  --green:#3f8f6b;
+  --green-soft:#e6f5ec;
+  --blue:#4a7fb5;
+  --blue-soft:#e8f1fa;
+  --orange-soft:#fff4e5;
+  --shadow:0 10px 30px rgba(92,60,39,.07);
+  --radius:22px;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;
+  font-family:"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic UI","Yu Gothic",system-ui,-apple-system,"Segoe UI",sans-serif;
+  color:var(--ink);
+  line-height:1.7;
+  background:
+    radial-gradient(1100px 560px at 6% -8%, #ffe9d6 0%, rgba(255,233,214,0) 62%),
+    radial-gradient(900px 520px at 104% 4%, #e7f3ea 0%, rgba(231,243,234,0) 58%),
+    var(--bg);
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+}
+img,svg{max-width:100%}
+button,input,select{font-family:inherit}
+a{color:var(--accent-deep)}
+.wrap{max-width:1120px;margin:0 auto;padding:0 22px}
+.is-hidden{display:none!important}
+.pc-only{display:inline}
+:focus-visible{outline:3px solid rgba(239,125,62,.45);outline-offset:2px}
+
+/* ============================================================
+   hero
+   ============================================================ */
+.hero{padding:46px 0 26px}
+.hero-inner{display:flex;align-items:center;justify-content:space-between;gap:30px}
+.kicker{
+  margin:0 0 10px;font-size:11px;font-weight:800;letter-spacing:.2em;
+  color:var(--accent-deep);
+}
+h1{
+  margin:0;font-size:clamp(32px,4.8vw,48px);line-height:1.12;
+  letter-spacing:.01em;font-weight:800;
+}
+h1 span{color:var(--accent-deep)}
+.lead{margin:14px 0 0;font-size:14.5px;color:var(--ink-soft);max-width:520px}
+.hero-chips{display:flex;gap:8px;flex-wrap:wrap;padding:0;margin:18px 0 0;list-style:none}
+.hero-chips li{
+  background:#fff;border:1px solid var(--line);border-radius:999px;
+  padding:5px 13px;font-size:12px;font-weight:700;color:var(--ink-soft);
+  box-shadow:0 2px 8px rgba(92,60,39,.05);
+}
+.hero-art{
+  flex:none;width:156px;height:156px;border-radius:50%;
+  background:linear-gradient(145deg,#ffe4cd,#ffd6dc);
+  display:grid;place-items:center;font-size:78px;line-height:1;
+  box-shadow:inset 0 -12px 24px rgba(255,255,255,.75),0 18px 40px rgba(239,125,62,.16);
+  position:relative;
+  animation:float 6s ease-in-out infinite;
+}
+.hero-art::before,.hero-art::after{
+  position:absolute;font-size:22px;opacity:.85;
+}
+.hero-art::before{content:"🐾";top:6px;left:2px;transform:rotate(-18deg)}
+.hero-art::after{content:"🦴";bottom:8px;right:-2px;transform:rotate(14deg)}
+@keyframes float{
+  0%,100%{transform:translateY(0)}
+  50%{transform:translateY(-7px)}
+}
+
+/* ============================================================
+   layout / cards
+   ============================================================ */
+.layout{
+  display:grid;grid-template-columns:minmax(0,1.06fr) minmax(0,.94fr);
+  gap:22px;align-items:start;
+}
+.card{
+  background:#fff;border:1px solid var(--line);border-radius:var(--radius);
+  padding:22px;box-shadow:var(--shadow);margin-bottom:18px;
+}
+.card:last-child{margin-bottom:0}
+.card-head{display:flex;gap:12px;align-items:flex-start;margin-bottom:18px}
+.card-head h2{font-size:17px;margin:0;line-height:1.45}
+.card-sub{margin:2px 0 0;font-size:12px;color:var(--ink-mute)}
+.step{
+  flex:none;width:30px;height:30px;border-radius:10px;
+  background:linear-gradient(140deg,#f89a5b,#ef7d3e);color:#fff;
+  font-weight:800;font-size:14px;display:grid;place-items:center;
+  box-shadow:0 4px 12px rgba(239,125,62,.3);
+}
+
+/* ============================================================
+   form controls
+   ============================================================ */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.field{display:flex;flex-direction:column;gap:6px;min-width:0}
+.field.span2{grid-column:1/-1}
+label{font-size:13px;font-weight:700;color:#6b5446}
+.hint{font-size:11.5px;color:var(--ink-mute);margin:0;line-height:1.6}
+.input-wrap{position:relative}
+input[type=number],input[type=date],select{
+  width:100%;height:47px;padding:0 13px;border:1.5px solid #eadbcd;
+  border-radius:12px;background:#fffdfa;color:var(--ink);font-size:14.5px;
+  font-weight:600;transition:border-color .15s,box-shadow .15s;
+  font-variant-numeric:tabular-nums;
+}
+input[type=number]::placeholder{color:#c9b8aa;font-weight:500}
+input:focus,select:focus{
+  outline:none;border-color:var(--accent);
+  box-shadow:0 0 0 4px rgba(239,125,62,.13);
+}
+.input-wrap input[type=number]{padding-right:46px}
+.unit{
+  position:absolute;right:13px;top:50%;transform:translateY(-50%);
+  font-size:12px;font-weight:700;color:var(--ink-mute);pointer-events:none;
+}
+select{
+  appearance:none;-webkit-appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5l5-5' fill='none' stroke='%23a08d7e' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 14px center;
+  padding-right:38px;cursor:pointer;
+}
+select:disabled{opacity:.6;cursor:not-allowed}
+.check{
+  display:flex;gap:8px;align-items:center;margin-top:4px;
+  font-size:12px;font-weight:600;color:var(--ink-soft);cursor:pointer;
+}
+.check input{width:15px;height:15px;accent-color:var(--accent);cursor:pointer}
+.mini-note{
+  margin-top:14px;background:var(--accent-soft);border:1px dashed #f0d3b8;
+  border-radius:12px;padding:10px 12px;font-size:12px;color:#8a6a52;
+}
+.mini-note b{color:var(--accent-deep)}
+
+/* segmented control */
+.seg{display:inline-flex;background:#f7ede3;border-radius:12px;padding:4px;gap:4px}
+.seg-btn{
+  border:0;background:transparent;color:#8a7262;font-weight:700;font-size:13px;
+  padding:8px 15px;border-radius:9px;cursor:pointer;transition:.18s;white-space:nowrap;
+}
+.seg-btn:hover{color:var(--accent-deep)}
+.seg-btn.is-active{
+  background:#fff;color:var(--accent-deep);
+  box-shadow:0 2px 8px rgba(120,80,50,.14);
+}
+.seg.small .seg-btn{font-size:12px;padding:7px 11px}
+
+/* mode card */
+.mode-card{padding:18px 22px}
+.mode-row{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.mode-title{font-size:13px;font-weight:800;color:#6b5446}
+.mode-note{margin:2px 0 0;font-size:12px;color:var(--ink-mute);max-width:540px;line-height:1.6}
+
+/* ============================================================
+   food selection / candidates
+   ============================================================ */
+.selected-label{
+  margin:12px 0 0;font-size:12px;color:var(--ink-mute);
+  background:#fdf7f0;border-radius:10px;padding:8px 11px;line-height:1.5;
+}
+.selected-label b{color:var(--ink)}
+.selected-label .kcal-sm{color:var(--accent-deep);font-weight:700}
+.cand-block{margin-top:20px;border-top:1px dashed var(--line);padding-top:16px}
+.cand-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:10px}
+.cand-head h3{font-size:13.5px;margin:0;color:#6b5446}
+.cand-head p{margin:0;font-size:11px;color:var(--ink-mute)}
+.cand-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.cand{
+  text-align:left;background:#fffdfa;border:1.5px solid #f0e3d6;border-radius:14px;
+  padding:10px 12px;cursor:pointer;transition:.15s;display:flex;flex-direction:column;
+  gap:2px;min-width:0;
+}
+.cand:hover{border-color:#f0b183;transform:translateY(-1px);box-shadow:0 6px 16px rgba(120,80,50,.09)}
+.cand.is-active{border-color:var(--accent);background:#fff7f0;box-shadow:0 4px 12px rgba(239,125,62,.14)}
+.cand .brand{font-size:10.5px;color:#b08c72;font-weight:800;letter-spacing:.02em}
+.cand .product{
+  font-size:12.5px;font-weight:700;line-height:1.35;color:var(--ink);
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
+  overflow:hidden;min-height:2.7em;
+}
+.cand .kcal-sm{font-size:11.5px;color:var(--accent-deep);font-weight:800}
+.cand .tags{display:flex;gap:4px;flex-wrap:wrap;margin-top:3px}
+.tag{
+  font-size:9.5px;font-weight:700;background:#f7ece1;color:#8a7262;
+  padding:1px 7px;border-radius:999px;white-space:nowrap;
+}
+.tag.diet{background:#e6f5ec;color:#347a59}
+.tag.note{background:#eef1f6;color:#68798f}
+
+/* ============================================================
+   result column
+   ============================================================ */
+.col-result{position:sticky;top:20px}
+.result-card{
+  background:linear-gradient(168deg,#fffdfb 0%,#fff6ec 100%);
+  border:1.5px solid #f3d9c2;padding:22px;
+}
+.result-top{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.badge{
+  display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:800;
+  padding:5px 12px;border-radius:999px;letter-spacing:.02em;
+}
+.badge-loss{background:#ffe9d8;color:#c25a1d}
+.badge-gain{background:var(--blue-soft);color:#376a9c}
+.badge-maintain{background:var(--green-soft);color:#2f7a56}
+.result-sub{font-size:12px;font-weight:800;color:#8a7262;margin-top:16px;letter-spacing:.04em}
+.result-kcal{display:flex;align-items:baseline;gap:6px;margin:0 0 6px}
+.result-kcal b{
+  font-size:52px;line-height:1.05;font-weight:800;color:var(--accent-deep);
+  letter-spacing:-.03em;font-variant-numeric:tabular-nums;
+}
+.result-kcal span{font-size:14px;font-weight:800;color:#b08c72}
+.result-note{
+  font-size:12.5px;color:#7a6558;background:#fff;border-radius:11px;
+  padding:8px 12px;border:1px solid #f5e3d3;display:block;line-height:1.55;
+}
+.result-note b{color:var(--accent-deep)}
+.rrows{margin-top:16px;border-top:1px dashed #ecd6c3;padding-top:4px}
+.rrow{
+  display:flex;justify-content:space-between;align-items:baseline;gap:12px;
+  padding:9px 0;border-bottom:1px dashed #f1e2d4;font-size:13px;
+}
+.rrow:last-child{border-bottom:0}
+.rrow span{color:#8a7262;flex:none;max-width:58%}
+.rrow b{font-size:14.5px;text-align:right;font-variant-numeric:tabular-nums;line-height:1.4}
+.rrow.is-primary b{color:var(--accent-deep);font-size:16px}
+.plan-box{
+  margin-top:16px;background:#fff;border:1px solid #f0dfd0;border-radius:16px;
+  padding:14px 14px 12px;
+}
+.plan-head{font-size:12px;font-weight:800;color:#8a6a52;display:flex;align-items:center;gap:6px}
+.plan-main{font-size:16px;font-weight:800;margin:6px 0 4px;line-height:1.45}
+.plan-main em{font-style:normal;color:var(--accent-deep)}
+.plan-note{margin:0;font-size:11.5px;color:var(--ink-mute);line-height:1.6}
+.plan-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.plan-cell{background:#fdf6ee;border-radius:11px;padding:8px 10px}
+.plan-cell span{display:block;font-size:10.5px;color:var(--ink-mute);font-weight:700}
+.plan-cell b{font-size:12.5px;font-variant-numeric:tabular-nums}
+.plan-cell.span2{grid-column:1/-1}
+.warn-list{list-style:none;margin:12px 0 0;padding:0;display:flex;flex-direction:column;gap:6px}
+.warn-list li{
+  font-size:11.5px;line-height:1.55;background:var(--orange-soft);
+  border:1px solid #f6d7ae;color:#8a5a24;border-radius:10px;padding:8px 10px;
+}
+details.acc{margin-top:14px;border-top:1px dashed #ecd6c3;padding-top:10px}
+details.acc summary{
+  cursor:pointer;font-size:12px;font-weight:700;color:#8a7262;list-style:none;
+  display:flex;justify-content:space-between;align-items:center;gap:8px;
+}
+summary::-webkit-details-marker{display:none}
+details.acc summary::after{content:"▾";font-size:10px;transition:.2s}
+details.acc[open] summary::after{transform:rotate(180deg)}
+.acc-body{font-size:12px;color:#7a6558;margin-top:10px;display:flex;flex-direction:column;gap:8px;line-height:1.65}
+.acc-body ul{margin:0;padding-left:17px;display:flex;flex-direction:column;gap:4px}
+.acc-body p{margin:0}
+.actions{display:flex;gap:8px;margin-top:14px}
+.btn{
+  font-weight:700;font-size:12.5px;border-radius:11px;padding:11px 14px;
+  cursor:pointer;border:1px solid transparent;transition:.16s;flex:1;
+  display:inline-flex;align-items:center;justify-content:center;gap:5px;
+}
+.btn-primary{
+  background:linear-gradient(135deg,#f79256,#ef7d3e);color:#fff;
+  box-shadow:0 6px 16px rgba(239,125,62,.28);
+}
+.btn-primary:hover{filter:brightness(1.04);transform:translateY(-1px)}
+.btn-ghost{background:#fff;border-color:#ecd8c6;color:#7a6558}
+.btn-ghost:hover{border-color:#e5b48e;color:var(--accent-deep)}
+.result-foot{margin:12px 0 0;font-size:10.5px;color:var(--ink-mute);line-height:1.6}
+.result-empty{text-align:center;padding:8px 0 4px}
+.result-empty .empty-emoji{font-size:44px;line-height:1.2}
+.result-empty p{margin:6px 0 0;font-size:13px;color:var(--ink-soft)}
+.result-empty .hint{margin-top:4px}
+
+/* tip card */
+.tip-card h3{margin:0 0 8px;font-size:14px;color:#6b5446}
+.tip-card ol{margin:0;padding-left:20px;font-size:12px;color:var(--ink-soft);line-height:1.85}
+.tip-card li::marker{color:var(--accent);font-weight:800}
+
+/* ============================================================
+   weight log
+   ============================================================ */
+.log-form{display:grid;grid-template-columns:1.1fr 1fr auto;gap:8px;align-items:stretch}
+.log-form .btn{flex:none;padding:0 16px;white-space:nowrap}
+.chart-wrap{
+  margin-top:14px;background:#fffdfa;border:1px solid #f3e6da;
+  border-radius:14px;padding:8px 8px 4px;
+}
+#logChart{display:block;width:100%;height:auto}
+.chart-grid{stroke:#f0e2d5;stroke-width:1}
+.chart-axis{fill:#b3a08f;font-size:10px;font-weight:600}
+.chart-line{fill:none;stroke:var(--accent);stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+.chart-dot{fill:#fff;stroke:var(--accent);stroke-width:2.4}
+.chart-goal{stroke:#7aa88f;stroke-dasharray:5 4;stroke-width:1.6}
+.chart-goal-label{fill:#6c9a80;font-size:10px;font-weight:700}
+.log-list{list-style:none;margin:12px 0 0;padding:0;display:flex;flex-direction:column;gap:6px}
+.log-item{
+  display:flex;align-items:center;gap:10px;font-size:12.5px;
+  padding:7px 10px;background:#fdf8f2;border-radius:10px;
+}
+.log-item .date{color:var(--ink-mute);flex:none}
+.log-item .w{margin-left:auto;font-weight:800;font-variant-numeric:tabular-nums}
+.log-item .del{
+  flex:none;border:0;background:transparent;color:#c0a893;cursor:pointer;
+  font-size:15px;line-height:1;padding:3px 6px;border-radius:6px;
+}
+.log-item .del:hover{background:#f6e3d5;color:#b5633a}
+
+/* ============================================================
+   mobile summary bar
+   ============================================================ */
+.mobile-bar{display:none}
+@media (max-width:940px){
+  body{padding-bottom:80px}
+  .mobile-bar{
+    position:fixed;left:10px;right:10px;bottom:10px;z-index:40;
+    display:flex;align-items:center;gap:10px;
+    background:rgba(59,42,33,.96);color:#fff;border-radius:16px;
+    padding:10px 12px;box-shadow:0 12px 30px rgba(40,20,10,.32);
+    transform:translateY(calc(100% + 24px));transition:transform .25s ease;
+    -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
+  }
+  .mobile-bar.show{transform:translateY(0)}
+  .mb-left{display:flex;align-items:baseline;gap:4px;font-size:11px;color:#e8d5c6}
+  .mb-left b{font-size:22px;color:#ffb27f;font-variant-numeric:tabular-nums;line-height:1.1}
+  .mb-mid{margin-left:auto;font-size:11px;color:#e8d5c6;text-align:right;line-height:1.3}
+  .mb-mid b{display:block;font-size:13.5px;color:#fff;font-variant-numeric:tabular-nums}
+  .mb-btn{
+    flex:none;border:0;border-radius:11px;padding:9px 12px;cursor:pointer;
+    background:linear-gradient(135deg,#f79256,#ef7d3e);color:#fff;
+    font-size:11.5px;font-weight:800;white-space:nowrap;font-family:inherit;
+  }
+  .toast{bottom:88px}
+}
+@media print{.mobile-bar{display:none!important}}
+
+/* ============================================================
+   footer / toast
+   ============================================================ */
+.footer{padding:10px 0 48px;color:var(--ink-mute);font-size:11px;line-height:1.75}
+.footer p{margin:0 0 6px}
+.footer b{color:var(--ink-soft)}
+.footer-sources{margin-top:10px}
+.footer-sources summary{cursor:pointer;color:var(--ink-soft);font-weight:700}
+.footer-sources ul{margin:8px 0 0;padding-left:18px}
+.footer-sources li{margin-bottom:3px}
+.footer-sources p{margin:8px 0 0}
+.toast{
+  position:fixed;left:50%;bottom:24px;transform:translate(-50%,20px);
+  background:#3b2a21;color:#fff;padding:10px 18px;border-radius:999px;
+  font-size:12.5px;font-weight:700;opacity:0;pointer-events:none;
+  transition:.25s;z-index:50;box-shadow:0 10px 24px rgba(0,0,0,.22);
+  max-width:calc(100vw - 32px);text-align:center;
+}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+
+/* ============================================================
+   responsive
+   ============================================================ */
+@media (max-width:940px){
+  .layout{grid-template-columns:1fr}
+  .col-result{position:static}
+  .hero-art{display:none}
+  .hero{padding-top:34px}
+}
+@media (max-width:600px){
+  .wrap{padding:0 14px}
+  .card{padding:18px;border-radius:18px}
+  .result-card{padding:18px}
+  .grid2{grid-template-columns:1fr}
+  .field.span2{grid-column:auto}
+  .hero-chips li{font-size:11px}
+  .result-kcal b{font-size:44px}
+  .cand-grid{grid-template-columns:1fr}
+  .log-form{grid-template-columns:1fr 1fr}
+  .log-form .btn{grid-column:1/-1;padding:10px}
+  .pc-only{display:none}
+  .actions{flex-direction:column}
+}
+
+/* ============================================================
+   print
+   ============================================================ */
+@media print{
+  body{background:#fff}
+  .hero-art,.mode-card,.tip-card,.cand-block,.log-form,.actions,.toast,.hero-chips{display:none!important}
+  .layout{grid-template-columns:1fr}
+  .card{box-shadow:none;border-color:#ddd;break-inside:avoid;margin-bottom:10px}
+  .col-result{position:static}
+  .footer{padding-bottom:0}
+}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap hero-inner">
+    <div class="hero-copy">
+      <p class="kicker">FOR DOG PARENTS 🐾</p>
+      <h1>わんごはん<span>計算機</span></h1>
+      <p class="lead">愛犬の体重と目標、手持ちのフードとおやつから、<br class="pc-only">1日にあげていい量をサッと計算。</p>
+      <ul class="hero-chips">
+        <li>🐶 犬種からフード候補</li>
+        <li>⚖️ 減量・増量ペース</li>
+        <li>🍖 おやつ10%ルール</li>
+      </ul>
+    </div>
+    <div class="hero-art" aria-hidden="true">🐶</div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="layout">
+
+    <!-- =====================================================
+         入力カラム
+         ===================================================== -->
+    <div class="col-inputs">
+
+      <section class="card mode-card" aria-label="計算モード">
+        <div class="mode-row">
+          <div>
+            <div class="mode-title">計算モード</div>
+            <p class="mode-note" id="modeNote"></p>
+          </div>
+          <div class="seg" role="group" aria-label="計算モードの切り替え">
+            <button type="button" id="modeSimple" class="seg-btn" aria-pressed="false">かんたん</button>
+            <button type="button" id="modeFull" class="seg-btn is-active" aria-pressed="true">しっかり</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="card" id="dogCard">
+        <div class="card-head">
+          <span class="step">1</span>
+          <div>
+            <h2>愛犬のこと</h2>
+            <p class="card-sub">犬種と体重を入れるだけでOK</p>
+          </div>
+        </div>
+
+        <div class="grid2">
+          <div class="field span2">
+            <label for="breed">犬種</label>
+            <select id="breed"></select>
+            <p class="hint" id="breedHint"></p>
+          </div>
+
+          <div class="field">
+            <label for="weight">現在の体重</label>
+            <div class="input-wrap">
+              <input type="number" id="weight" inputmode="decimal" step="0.1" min="0.5" max="120" value="3.5" aria-describedby="breedHint">
+              <span class="unit">kg</span>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="target">目標体重</label>
+            <div class="input-wrap">
+              <input type="number" id="target" inputmode="decimal" step="0.1" min="0.5" max="120" value="3.0">
+              <span class="unit">kg</span>
+            </div>
+          </div>
+
+          <div class="field span2">
+            <label for="age">年齢区分</label>
+            <select id="age">
+              <option value="puppy0">子犬（〜4ヶ月）</option>
+              <option value="puppy">子犬（4ヶ月〜1歳）</option>
+              <option value="adult" selected>成犬（1〜7歳）</option>
+              <option value="senior">高齢犬（7歳〜）</option>
+            </select>
+            <p class="hint is-hidden" id="ageSimpleHint">※かんたんモードでは計算に使いません（フード候補の絞り込みに使います）</p>
+          </div>
+
+          <div class="field full-only" id="neuterField">
+            <label for="neuter">避妊・去勢</label>
+            <select id="neuter">
+              <option value="yes" selected>済み</option>
+              <option value="no">していない</option>
+            </select>
+          </div>
+
+          <div class="field full-only" id="activityField">
+            <label for="activity">活動量</label>
+            <select id="activity">
+              <option value="low">少なめ（お散歩短め）</option>
+              <option value="normal" selected>ふつう</option>
+              <option value="high">活発（よく走る）</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="mini-note" id="targetHint"></div>
+      </section>
+
+      <section class="card" id="foodCard">
+        <div class="card-head">
+          <span class="step">2</span>
+          <div>
+            <h2>手持ちのフード</h2>
+            <p class="card-sub">パッケージのカロリーがわからなければ、候補から選べます（<span id="foodCount">27</span>商品収録）</p>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="foodSelect">フードを選ぶ</label>
+          <select id="foodSelect"></select>
+          <label class="check">
+            <input type="checkbox" id="showAllFoods">
+            すべてのフードを表示する
+          </label>
+        </div>
+
+        <div class="grid2" style="margin-top:14px">
+          <div class="field">
+            <label for="foodKcal">カロリー（100gあたり）</label>
+            <div class="input-wrap">
+              <input type="number" id="foodKcal" inputmode="numeric" step="1" min="0" max="900" value="360">
+              <span class="unit">kcal</span>
+            </div>
+            <p class="hint">パッケージの「代謝エネルギー」を見てください</p>
+          </div>
+          <div class="field">
+            <label for="bagRemaining">フードの残り（任意）</label>
+            <div class="input-wrap">
+              <input type="number" id="bagRemaining" inputmode="numeric" step="10" min="0" max="20000" placeholder="例: 800">
+              <span class="unit">g</span>
+            </div>
+            <p class="hint">入れると「何日分か」も計算します</p>
+          </div>
+        </div>
+
+        <p class="selected-label" id="foodSelectedLabel"></p>
+
+        <div class="cand-block">
+          <div class="cand-head">
+            <h3>犬種に合うフード候補</h3>
+            <p>タップでカロリーを入力</p>
+          </div>
+          <div class="cand-grid" id="candidates"></div>
+          <p class="hint" style="margin-top:9px">候補にないフードは「フードを手入力する」を選び、パッケージのkcalを入れてください。候補の数値は目安です。</p>
+        </div>
+      </section>
+
+      <section class="card" id="treatCard">
+        <div class="card-head">
+          <span class="step">3</span>
+          <div>
+            <h2>おやつ</h2>
+            <p class="card-sub">おやつは1日のカロリーの10%以内が目安</p>
+          </div>
+        </div>
+
+        <div class="seg small" role="group" aria-label="おやつのカロリー入力方法" style="margin-bottom:14px">
+          <button type="button" id="treatPerPiece" class="seg-btn is-active" aria-pressed="true">1個あたりkcal</button>
+          <button type="button" id="treatPer100" class="seg-btn" aria-pressed="false">100gあたりkcal</button>
+        </div>
+
+        <div class="grid2" id="treatPieceField">
+          <div class="field span2">
+            <label for="treatPieceKcal">おやつ1個のカロリー</label>
+            <div class="input-wrap">
+              <input type="number" id="treatPieceKcal" inputmode="numeric" step="1" min="0" max="500" value="10">
+              <span class="unit">kcal</span>
+            </div>
+            <p class="hint">例: 小さめのジャーキー1本 約10kcal</p>
+          </div>
+        </div>
+
+        <div class="grid2 is-hidden" id="treat100Fields">
+          <div class="field">
+            <label for="treat100Kcal">カロリー（100gあたり）</label>
+            <div class="input-wrap">
+              <input type="number" id="treat100Kcal" inputmode="numeric" step="1" min="0" max="900" value="350">
+              <span class="unit">kcal</span>
+            </div>
+          </div>
+          <div class="field">
+            <label for="treatPieceG">1個あたりの重さ</label>
+            <div class="input-wrap">
+              <input type="number" id="treatPieceG" inputmode="decimal" step="0.5" min="0" max="500" value="5">
+              <span class="unit">g</span>
+            </div>
+          </div>
+        </div>
+
+        <p class="mini-note" id="treatEffective"></p>
+      </section>
+
+      <section class="card" id="logCard">
+        <div class="card-head">
+          <span class="step">4</span>
+          <div>
+            <h2>体重のきろく</h2>
+            <p class="card-sub">この端末に保存されます。グラフで変化をチェック</p>
+          </div>
+        </div>
+
+        <div class="log-form">
+          <input type="date" id="logDate" aria-label="記録する日付">
+          <div class="input-wrap">
+            <input type="number" id="logWeight" inputmode="decimal" step="0.1" min="0.5" max="120" placeholder="体重" aria-label="記録する体重">
+            <span class="unit">kg</span>
+          </div>
+          <button type="button" class="btn btn-ghost" id="logAdd">記録する</button>
+        </div>
+
+        <div class="chart-wrap">
+          <svg id="logChart" viewBox="0 0 600 220" role="img" aria-label="体重の推移グラフ"></svg>
+        </div>
+
+        <ul class="log-list" id="logList"></ul>
+        <p class="hint" id="logEmpty">まだ記録がありません。体重を記録すると、ここに推移が表示されます。</p>
+      </section>
+
+    </div>
+
+    <!-- =====================================================
+         結果カラム
+         ===================================================== -->
+    <aside class="col-result">
+      <section class="card result-card" aria-label="計算結果">
+        <div id="resultBody" aria-live="polite"></div>
+      </section>
+
+      <section class="card tip-card">
+        <h3>💡 つかいかた</h3>
+        <ol>
+          <li>犬種・現在の体重・目標体重を入力</li>
+          <li>手持ちのフードを選ぶ（わからなければ候補から）</li>
+          <li>おやつのカロリーを入力</li>
+          <li>計算結果をチェック！</li>
+        </ol>
+        <p class="hint" style="margin-top:10px">「かんたん」と「しっかり」はいつでも切り替えられます。迷ったら「しっかり」がおすすめ。</p>
+      </section>
+    </aside>
+
+  </div>
+</main>
+
+<footer class="footer wrap">
+  <p><b>ご注意：</b>本サイトの計算は一般的な目安です。持病のある犬、妊娠・授乳中の犬、成長期の子犬は、かかりつけの獣医師に相談してください。</p>
+  <p>フードのカロリーは各メーカーの公表値をもとにした目安です。商品の改定などで数値が変わることがあるため、必ずお手持ちのパッケージ記載の「代謝エネルギー」をご確認ください。</p>
+  <p>体重の記録は、このブラウザ内（localStorage）にのみ保存されます。外部への送信は行いません。</p>
+  <details class="footer-sources">
+    <summary>データの出典・根拠</summary>
+    <ul>
+      <li>エネルギー計算：RER＝70×体重(kg)^0.75、維持係数は <a href="https://vmc.vet.osu.edu/services/companion-animal-nutrition-support-service" target="_blank" rel="noopener">Ohio State University Veterinary Medical Center</a> および <a href="https://wsava.org/global-guidelines/global-nutrition-guidelines/" target="_blank" rel="noopener">WSAVA Global Nutrition Guidelines</a> の代表値</li>
+      <li>おやつは1日の10%以内：<a href="https://wsava.org/global-guidelines/global-nutrition-guidelines/" target="_blank" rel="noopener">WSAVA Global Nutrition Guidelines</a></li>
+      <li>減量ペース 週1〜2%：<a href="https://jaaha.kglmeridian.com/view/journals/aaha/50/1/article-p1.xml" target="_blank" rel="noopener">AAHA 2014 Weight Management Guidelines</a></li>
+      <li>フードのカロリー：各メーカー公式商品ページの「代謝エネルギー」表示（2026年11月確認）</li>
+      <li>犬種の体重目安：<a href="https://pawlov.jp/tools/breed-size-compare/" target="_blank" rel="noopener">Pawlov 犬種比較表</a>（アニコム損保・JKC情報）／日本語版Wikipedia</li>
+    </ul>
+    <p>商品の改定で数値は変わります。必ずお手持ちのパッケージ記載の「代謝エネルギー」をご確認ください。</p>
+  </details>
+  <p id="dataMeta" style="margin-top:10px;opacity:.8"></p>
+  <p style="margin-top:4px;opacity:.8">わんごはん計算機 🐾</p>
+</footer>
+
+<div class="mobile-bar" id="mobileBar">
+  <div class="mb-left"><span>1日</span><b id="mbKcal">—</b><span>kcal</span></div>
+  <div class="mb-mid"><span>フード</span><b id="mbFood">—</b></div>
+  <button type="button" class="mb-btn" id="mbBtn">結果を見る ↓</button>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+'use strict';
+
+/* ===================== CALC CORE START ===================== */
+/* 画面に依存しない計算ロジック（自動テスト対象） */
+
+const SIZE_KCAL_PER_KG = { '超小型犬': 80, '小型犬': 68, '中型犬': 57, '大型犬': 48 };
+const SIZE_ORDER = ['超小型犬', '小型犬', '中型犬', '大型犬'];
+const STAGE_LABEL = { puppy: '子犬', adult: '成犬', senior: '高齢犬' };
+const ACTIVITY_MULT = { low: 0.9, normal: 1.0, high: 1.15 };
+
+function rer(weightKg) {
+  return 70 * Math.pow(weightKg, 0.75);
+}
+
+function safeNum(v, fallback) {
+  if (fallback === undefined) fallback = 0;
+  if (typeof v === 'number') return Number.isFinite(v) ? v : fallback;
+  const n = parseFloat(v);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+function round(n, d) {
+  if (d === undefined) d = 0;
+  if (!Number.isFinite(n)) return NaN;
+  const p = Math.pow(10, d);
+  return Math.round(n * p) / p;
+}
+
+function addDays(date, days) {
+  const d = new Date(date.getTime());
+  d.setDate(d.getDate() + days);
+  return d;
+}
+
+/* 維持カロリーの係数（しっかりモード） */
+function maintainFactor(opts) {
+  let f;
+  if (opts.age === 'puppy0') f = 3.0;
+  else if (opts.age === 'puppy') f = 2.0;
+  else if (opts.age === 'senior') f = 1.4;
+  else f = opts.neutered === 'yes' ? 1.6 : 1.8;
+  const am = ACTIVITY_MULT[opts.activity] !== undefined ? ACTIVITY_MULT[opts.activity] : 1;
+  return f * am;
+}
+
+function compute(s) {
+  const out = { valid: false, warnings: [], notes: [] };
+  const w = safeNum(s.weight, NaN);
+  const t = safeNum(s.target, NaN);
+  if (!(w > 0) || w > 120 || !(t > 0) || t > 120) return out;
+
+  const full = s.mode === 'full';
+  const size = s.size || '小型犬';
+  const sizeFactor = SIZE_KCAL_PER_KG[size] || 68;
+  const factor = full ? maintainFactor(s) : null;
+  const activityMult = ACTIVITY_MULT[s.activity] !== undefined ? ACTIVITY_MULT[s.activity] : 1;
+
+  const rerCurrent = rer(w);
+  const rerTarget = rer(t);
+  const mainCurrent = full ? rerCurrent * factor : w * sizeFactor;
+
+  const diff = round(t - w, 2);
+  const status = Math.abs(diff) < 0.1 ? 'maintain' : (diff < 0 ? 'loss' : 'gain');
+
+  let allowance;
+  if (status === 'maintain') {
+    allowance = mainCurrent;
+  } else if (status === 'loss') {
+    allowance = rerTarget; /* 獣医標準：目標体重のRER */
+  } else {
+    const mainTarget = full ? rerTarget * factor : t * sizeFactor;
+    allowance = mainTarget * 1.15; /* 増量：維持の15%増 */
+  }
+
+  const treatLimit = allowance * 0.1;
+  let perPiece;
+  if (s.treatMode === 'per100') {
+    perPiece = safeNum(s.treatKcal100) * safeNum(s.treatPieceG) / 100;
+  } else {
+    perPiece = safeNum(s.treatKcalPiece);
+  }
+  const pieces = perPiece > 0 ? Math.floor((treatLimit + 1e-9) / perPiece) : null;
+  const treatKcalUsed = pieces !== null ? pieces * perPiece : 0;
+
+  const foodKcal = safeNum(s.foodKcal);
+  const perGram = foodKcal / 100;
+  const foodGrams = perGram > 0 ? Math.floor((allowance - treatKcalUsed) / perGram + 1e-9) : null;
+  const foodGramsNoTreat = perGram > 0 ? Math.floor(allowance / perGram + 1e-9) : null;
+  const perMeal = foodGrams !== null ? round(foodGrams / 2, 0) : null;
+
+  const bag = safeNum(s.bag);
+  const bagDays = bag > 0 && foodGrams ? Math.floor(bag / foodGrams) : null;
+
+  let plan = null;
+  if (status !== 'maintain') {
+    const absDiff = Math.abs(diff);
+    const paceSlow = w * 0.01; /* kg/週 */
+    const paceFast = w * 0.02;
+    const weeksFast = absDiff / paceFast;
+    const weeksSlow = absDiff / paceSlow;
+    plan = {
+      absDiff: absDiff,
+      paceSlow: paceSlow,
+      paceFast: paceFast,
+      weeksFast: weeksFast,
+      weeksSlow: weeksSlow,
+      dateFast: addDays(new Date(), Math.ceil(weeksFast * 7)),
+      dateSlow: addDays(new Date(), Math.ceil(weeksSlow * 7))
+    };
+  }
+
+  /* ---- 注意メッセージ ---- */
+  const breed = s.breedInfo;
+  if (breed && breed.min) {
+    if (t < breed.min * 0.7 || t > breed.max * 1.3) {
+      const rangeTxt = breed.min === breed.max ? '約' + breed.min + 'kg' : '約' + breed.min + '〜' + breed.max + 'kg';
+      out.warnings.push('目標体重が' + breed.name + 'の成犬目安（' + rangeTxt + '）から大きく外れています。入力ミスがないか確認してください。');
+    }
+  }
+  if (status === 'loss' && Math.abs(diff) / w > 0.15) {
+    out.warnings.push('現在体重から15%以上の減量は、獣医師に相談しながら進めてください。');
+  }
+  const isPuppy = s.age === 'puppy' || s.age === 'puppy0';
+  if (isPuppy && status === 'loss') {
+    out.warnings.push('成長期の子犬は体重が増えるのが正常です。減量が必要に見える場合は、自己判断せず獣医師に相談してください。');
+  }
+  if (status === 'loss' && allowance < rerCurrent * 0.7) {
+    out.warnings.push('給与カロリーが現在の維持カロリーの70%未満です。急な減量は体調を崩すことがあります。獣医師に相談してください。');
+  }
+  if (foodKcal > 0 && (foodKcal < 250 || foodKcal > 500)) {
+    out.warnings.push('フードのカロリーが一般的なドライフードの範囲（約300〜450kcal/100g）から外れています。パッケージの数値を確認してください。');
+  }
+  if (pieces === 0) {
+    out.warnings.push('おやつ1個（' + round(perPiece, 1) + 'kcal）で1日の上限を超えてしまいます。小さく分けるか、低カロリーのおやつにしましょう。');
+  }
+  if (foodGrams !== null && foodGrams < 15 && w > 1.5) {
+    out.warnings.push('1日のフード量がかなり少なめです。フードのカロリー設定が正しいか確認してください。');
+  }
+  if (isPuppy && status === 'gain') {
+    out.notes.push('子犬は成長に合わせて必要なカロリーが変わります。1〜2か月ごとに体重を測り、給与量を見直しましょう。');
+  }
+  if (s.age === 'senior') {
+    out.notes.push('高齢犬は筋肉量が減りやすいため、体重の変化をこまめに記録しましょう。');
+  }
+
+  return {
+    valid: true,
+    status: status,
+    w: w,
+    t: t,
+    diff: diff,
+    size: size,
+    full: full,
+    rerCurrent: rerCurrent,
+    rerTarget: rerTarget,
+    mainCurrent: mainCurrent,
+    factor: factor,
+    activityMult: activityMult,
+    allowance: allowance,
+    treatLimit: treatLimit,
+    perPiece: perPiece,
+    pieces: pieces,
+    treatKcalUsed: treatKcalUsed,
+    foodKcal: foodKcal,
+    perGram: perGram,
+    foodGrams: foodGrams,
+    foodGramsNoTreat: foodGramsNoTreat,
+    perMeal: perMeal,
+    bag: bag,
+    bagDays: bagDays,
+    plan: plan,
+    warnings: out.warnings,
+    notes: out.notes
+  };
+}
+/* ===================== CALC CORE END ===================== */
+
+/* ===================== DATA START ===================== */
+const BREEDS = [
+  {
+    "id": "pomeranian",
+    "name": "ポメラニアン",
+    "size": "超小型犬",
+    "min": 1.4,
+    "max": 2.5
+  },
+  {
+    "id": "chihuahua",
+    "name": "チワワ",
+    "size": "超小型犬",
+    "min": 1.5,
+    "max": 3.0
+  },
+  {
+    "id": "yorkshire",
+    "name": "ヨークシャーテリア",
+    "size": "超小型犬",
+    "min": 1.5,
+    "max": 3.0
+  },
+  {
+    "id": "maltese",
+    "name": "マルチーズ",
+    "size": "超小型犬",
+    "min": 2.0,
+    "max": 3.0
+  },
+  {
+    "id": "toypoodle",
+    "name": "トイプードル",
+    "size": "超小型犬",
+    "min": 3.0,
+    "max": 3.0
+  },
+  {
+    "id": "papillon",
+    "name": "パピヨン",
+    "size": "小型犬",
+    "min": 4.0,
+    "max": 4.5
+  },
+  {
+    "id": "miniature-schnauzer",
+    "name": "ミニチュアシュナウザー",
+    "size": "小型犬",
+    "min": 4.0,
+    "max": 8.0
+  },
+  {
+    "id": "dachshund",
+    "name": "ミニチュアダックスフンド",
+    "size": "小型犬",
+    "min": 4.0,
+    "max": 5.0
+  },
+  {
+    "id": "minpin",
+    "name": "ミニチュアピンシャー",
+    "size": "小型犬",
+    "min": 4.0,
+    "max": 6.0
+  },
+  {
+    "id": "cavalier",
+    "name": "キャバリア",
+    "size": "小型犬",
+    "min": 5.0,
+    "max": 8.0
+  },
+  {
+    "id": "shih-tzu",
+    "name": "シーズー",
+    "size": "小型犬",
+    "min": 5.0,
+    "max": 7.0
+  },
+  {
+    "id": "jrt",
+    "name": "ジャックラッセルテリア",
+    "size": "小型犬",
+    "min": 5.0,
+    "max": 6.0
+  },
+  {
+    "id": "pug",
+    "name": "パグ",
+    "size": "小型犬",
+    "min": 6.0,
+    "max": 8.0
+  },
+  {
+    "id": "frenchbulldog",
+    "name": "フレンチブルドッグ",
+    "size": "小型犬",
+    "min": 8.0,
+    "max": 14.0
+  },
+  {
+    "id": "beagle",
+    "name": "ビーグル",
+    "size": "中型犬",
+    "min": 6.0,
+    "max": 9.0
+  },
+  {
+    "id": "shiba",
+    "name": "柴犬",
+    "size": "中型犬",
+    "min": 7.0,
+    "max": 11.0
+  },
+  {
+    "id": "corgi",
+    "name": "コーギー",
+    "size": "中型犬",
+    "min": 9.0,
+    "max": 12.0
+  },
+  {
+    "id": "border-collie",
+    "name": "ボーダーコリー",
+    "size": "中型犬",
+    "min": 16.0,
+    "max": 23.0
+  },
+  {
+    "id": "husky",
+    "name": "シベリアンハスキー",
+    "size": "大型犬",
+    "min": 15.5,
+    "max": 28.0
+  },
+  {
+    "id": "samoyed",
+    "name": "サモエド",
+    "size": "大型犬",
+    "min": 18.0,
+    "max": 32.0
+  },
+  {
+    "id": "dalmatian",
+    "name": "ダルメシアン",
+    "size": "大型犬",
+    "min": 24.0,
+    "max": 32.0
+  },
+  {
+    "id": "labrador",
+    "name": "ラブラドールレトリバー",
+    "size": "大型犬",
+    "min": 25.0,
+    "max": 34.0
+  },
+  {
+    "id": "golden",
+    "name": "ゴールデンレトリバー",
+    "size": "大型犬",
+    "min": 27.0,
+    "max": 36.0
+  },
+  {
+    "id": "akita",
+    "name": "秋田犬",
+    "size": "大型犬",
+    "min": 34.0,
+    "max": 50.0
+  },
+  {
+    "id": "other",
+    "name": "その他・わからない",
+    "size": null,
+    "min": null,
+    "max": null
+  }
+];
+
+/* フードデータ（研究結果をここに差し込む） */
+const RAW_FOODS = [
+  {
+    "id": "food-1",
+    "brand": "ロイヤルカナン",
+    "product": "ミニ アダルト",
+    "kcal_per_100g": 393,
+    "size": "小型犬",
+    "life_stage": "成犬",
+    "diet": false,
+    "confidence": "high",
+    "source": "https://www.royalcanin.com/jp/dogs/products/retail-products/mini-adult-3001"
+  },
+  {
+    "id": "food-2",
+    "brand": "ロイヤルカナン",
+    "product": "ミニ パピー",
+    "kcal_per_100g": 408,
+    "size": "小型犬",
+    "life_stage": "子犬",
+    "diet": false,
+    "confidence": "high",
+    "source": "https://www.royalcanin.com/jp/dogs/products/retail-products/puppy---mini-3000"
+  },
+  {
+    "id": "food-3",
+    "brand": "ロイヤルカナン",
+    "product": "ミニ アダルト 8+",
+    "kcal_per_100g": 393,
+    "size": "小型犬",
+    "life_stage": "高齢犬",
+    "diet": false,
+    "confidence": "high",
+    "source": "https://www.royalcanin.com/jp/dogs/products/retail-products/mini-adult-8+-3002"
+  },
+  {
+    "id": "food-4",
+    "brand": "ロイヤルカナン",
+    "product": "ミニ ライト ウェイト ケア",
+    "kcal_per_100g": 323,
+    "size": "小型犬",
+    "life_stage": "成犬",
+    "diet": true,
+    "confidence": "high",
+    "source": "https://www.royalcanin.com/jp/dogs/products/retail-products/mini-light-weight-care-3018"
+  },
+  {
+    "id": "food-5",
+    "brand": "ピュリナ プロプラン",
+    "product": "成犬用 超小型犬・小型犬 成犬の健康維持をサポート チキン",
+    "kcal_per_100g": 380,
+    "size": "小型犬",
+    "life_stage": "成犬",
+    "diet": false,
+    "confidence": "high",
+    "source": "https://purina.nestle.jp/food/dog/proplan-essential-health-s"
+  },
+  {
+    "id": "food-6",
+    "brand": "ピュリナ プロプラン",
+    "product": "成犬用 小型犬 筋肉バランスのサポート チキン",
+    "kcal_per_100g": 403,
+    "size": "小型犬",
+    "life_stage": "成犬",
+    "diet": false,
+    "confidence": "high",
+    "source": "https://purina.nestle.jp/food/dog/proplan-optilife-s"
+  },
+  {
+    "id": "food-7",
+    "brand": "ピュリナ プロプラン",
+    "product": "成犬用 中型犬・大型犬 筋肉バランスのサポート チキン",
+    "kcal_per_100g": 400,
+    "size": "中型犬",
+    "life_stage": "成犬",
+    "diet": false,
+    "confidence": "high",
+    "source": "https://purina.nestle.jp/food/dog/proplan-optilife-ml"
+  },
+  {
+    "id": "food-8",
+    "brand": "ピュリナ プロプラン",
+    "product": "シニア犬用 9歳頃からの小型犬 脳と記憶力のサポート チキン",
+    "kcal_per_100g": 364,
+    "size": "小型犬",
+    "life_stage": "高齢犬",
+    "diet": false,
+    "confidence": "high",
+    "source": "https://purina.nestle.jp/food/dog/proplan-optiage-s"
+  },
+  {
+    "id": "food-9",
+    "brand": "ピュリナ プロプラン",
+    "product": "子犬用 超小型犬・小型犬 健康的な成長と発達をサポート チキン",
+    "kcal_per_100g": 390,
+    "size": "超小型犬",
+    "life_stage": "子犬",
+    "diet": false,
+    "confidence": "high",
+    "source": "https://purina.nestle.jp/food/dog/proplan-immunity-s"
+  },
+  {
+    "id": "food-10",
+    "brand": "ピュリナ プロプラン",
+    "product": "成犬用 超小型犬・小型犬 皮膚と胃腸の健康ケア サーモン&あじ",
+    "kcal_per_100g": 380,
+    "size": "小型犬",
+    "life_stage": "成犬",
+    "diet": false,
+    "confidence": "high",
+    "source": "https://purina.nestle.jp/food/dog/proplan-skincare-s"
+  },
+  {
+    "id": "food-11",
+    "brand": "グラン・デリ",
+    "product": "成犬用 彩り野菜入りセレクト ビーフ・緑黄色野菜・ささみ・小魚入り",
+    "kcal_per_100g": 355,
+    "size": "全犬種",
+    "life_stage": "成犬",
+    "diet": false,
+    "confidence": "high",
+    "source": "https://jp.unicharmpet.com/ja/products/dog/food-grandeli-4520699623886.html"
+  },
+  {
+    "id": "food-12",
+    "brand": "グラン・デリ",
+    "product": "カリカリ仕立て 成犬用 食べやすい超小粒",
+    "kcal_per_100g": 355,
+    "size": "超小型犬",
+    "life_stage": "成犬",
+    "diet": false,
+    "confidence": "high",
+    "source": "https://jp.unicharmpet.com/ja/products/dog/food-grandeli-4520699122150.html"
+  },
+  {
+    "id": "food-13",
+    "brand": "グラン・デリ",
+    "product": "10歳以上用 栄養バランスセレクト",
+    "kcal_per_100g": 350,
+    "size": "全犬種",
+    "life_stage": "高齢犬",
+    "diet": false,
+    "confidence": "high",
+    "source": "https://jp.unicharmpet.com/ja/products/dog/food-grandeli-4520699624777.html"
+  },
+  {
+    "id": "food-14",
+    "brand": "グラン・デリ",
+    "product": "カリカリ仕立て 7歳頃からの低脂肪 栄養バランスセレクト（脂肪分約35%カット）",
+    "kcal_per_100g": 335,
+    "size": "全犬種",
+    "life_stage": "高齢犬",
+    "diet": true,
+    "confidence": "high",
+    "source": "https://jp.unicharmpet.com/ja/products/dog/food-grandeli-4520699626559.html"
+  },
+  {
+    "id": "food-15",
+    "brand": "グラン・デリ",
+    "product": "成犬用 低脂肪 彩り野菜入りセレクト（脂肪分約25%カット）",
+    "kcal_per_100g": 340,
+    "size": "全犬種",
+    "life_stage": "成犬",
+    "diet": true,
+    "confidence": "high",
+    "source": "https://jp.unicharmpet.com/ja/products/dog/food-grandeli-4520699626030.html"
+  },
+  {
+    "id": "food-16",
+    "brand": "愛犬元気",
+    "product": "成犬用 ビーフ・緑黄色野菜・小魚入り",
+    "kcal_per_100g": 355,
+    "size": "全犬種",
+    "life_stage": "成犬",
+    "diet": false,
+    "confidence": "high",
+    "source": "https://jp.unicharmpet.com/ja/products/dog/food-aikengenki-4520699682890.html"
+  },
+  {
+    "id": "food-17",
+    "brand": "愛犬元気",
+    "product": "柴犬用 ビーフ・緑黄色野菜・小魚入り",
+    "kcal_per_100g": 355,
+    "size": "中型犬",
+    "life_stage": "成犬",
+    "diet": false,
+    "confidence": "high",
+    "source": "https://jp.unicharmpet.com/ja/products/dog/food-aikengenki-4520699693032.html"
+  },
+  {
+    "id": "food-18",
+    "brand": "愛犬元気",
+    "product": "肥満が気になる愛犬用 ビーフ・ささみ・緑黄色野菜・小魚入り",
+    "kcal_per_100g": 340,
+    "size": "全犬種",
+    "life_stage": "成犬",
+    "diet": true,
+    "confidence": "high",
+    "source": "https://jp.unicharmpet.com/ja/products/dog/food-aikengenki-4520699657966.html"
+  },
+  {
+    "id": "food-19",
+    "brand": "愛犬元気",
+    "product": "健康に育つ子犬用 チキン・ささみ・緑黄色野菜・小魚入り",
+    "kcal_per_100g": 370,
+    "size": "全犬種",
+    "life_stage": "子犬",
+    "diet": false,
+    "confidence": "high",
+    "source": "https://jp.unicharmpet.com/ja/products/dog/food-aikengenki-4520699655405.html"
+  },
+  {
+    "id": "food-20",
+    "brand": "ヒルズ",
+    "product": "アダルト 小型犬用 チキン（小粒）1〜6歳",
+    "kcal_per_100g": 370,
+    "size": "小型犬",
+    "life_stage": "成犬",
+    "diet": false,
+    "confidence": "high",
+    "source": "https://www.hills.co.jp/dog-food/sd-canine-adult-mini-chicken-dry"
+  },
+  {
+    "id": "food-21",
+    "brand": "ニュートロ",
+    "product": "シュプレモ 超小型犬4kg以下用 成犬用",
+    "kcal_per_100g": 380,
+    "size": "超小型犬",
+    "life_stage": "成犬",
+    "diet": false,
+    "confidence": "high",
+    "source": "https://store.nutro.jp/products/supremo_d_adult_toy"
+  },
+  {
+    "id": "food-22",
+    "brand": "カナガン",
+    "product": "カナガンドッグフード チキン",
+    "kcal_per_100g": 376,
+    "size": "全犬種",
+    "life_stage": "オールステージ",
+    "diet": false,
+    "confidence": "high",
+    "source": "https://www.canagan.jp/products/detail/2001"
+  },
+  {
+    "id": "food-23",
+    "brand": "アカナ",
+    "product": "アダルトスモールブリードレシピ",
+    "kcal_per_100g": 351,
+    "size": "小型犬",
+    "life_stage": "成犬",
+    "diet": false,
+    "confidence": "high",
+    "source": "https://acana.net/products/adult-small-breed-recipe"
+  },
+  {
+    "id": "food-24",
+    "brand": "アカナ",
+    "product": "ライト&フィットレシピ",
+    "kcal_per_100g": 307,
+    "size": "全犬種",
+    "life_stage": "成犬",
+    "diet": true,
+    "confidence": "high",
+    "source": "https://acana.net/products/light-fit-recipe"
+  },
+  {
+    "id": "food-25",
+    "brand": "オリジン",
+    "product": "オリジン オリジナル",
+    "kcal_per_100g": 386,
+    "size": "全犬種",
+    "life_stage": "オールステージ",
+    "diet": false,
+    "confidence": "high",
+    "source": "https://acana.net/products/orijen-original"
+  },
+  {
+    "id": "food-26",
+    "brand": "アイムス",
+    "product": "成犬用 1歳〜6歳 チキン 小粒",
+    "kcal_per_100g": 364,
+    "size": "全犬種",
+    "life_stage": "成犬",
+    "diet": false,
+    "confidence": "low",
+    "source": "https://ikupet.com/petfood/lineup/pfdum/"
+  },
+  {
+    "id": "food-27",
+    "brand": "ペディグリー",
+    "product": "ドライ 成犬用 ビーフ&緑黄色野菜入り",
+    "kcal_per_100g": 350,
+    "size": "全犬種",
+    "life_stage": "成犬",
+    "diet": false,
+    "confidence": "low",
+    "source": "https://ikupet.com/petfood/lineup/pfdnm/"
+  }
+];
+
+const FOODS = RAW_FOODS.map(function (f, i) {
+  return {
+    id: f.id || ('food-' + (i + 1)),
+    brand: f.brand || '',
+    product: f.product || '',
+    kcal_per_100g: Number(f.kcal_per_100g) || 0,
+    size: f.size || '全犬種',
+    life_stage: f.life_stage || 'オールステージ',
+    diet: !!f.diet,
+    confidence: f.confidence || 'low',
+    source: f.source || ''
+  };
+});
+/* ===================== DATA END ===================== */
+
+/* ===================== helpers ===================== */
+const $ = function (sel, root) { return (root || document).querySelector(sel); };
+const $$ = function (sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); };
+const esc = function (s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, function (m) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m];
+  });
+};
+function fmt(n, d) {
+  if (d === undefined) d = 0;
+  if (!Number.isFinite(n)) return '—';
+  return n.toLocaleString('ja-JP', { minimumFractionDigits: 0, maximumFractionDigits: d });
+}
+function fmtInt(n) { return Number.isFinite(n) ? Math.round(n).toLocaleString('ja-JP') : '—'; }
+function kg(n) { return Number.isFinite(n) ? Number(n).toFixed(1) : '—'; }
+function todayISO() {
+  const d = new Date();
+  const p = function (n) { return String(n).padStart(2, '0'); };
+  return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+}
+function isoToDate(iso) {
+  const parts = String(iso).split('-');
+  return new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+}
+
+/* ===================== state ===================== */
+const LS_INPUT = 'wan-input-v1';
+const LS_LOG = 'wan-log-v1';
+
+const state = {
+  mode: 'full',
+  breed: 'toypoodle',
+  age: 'adult',
+  neutered: 'yes',
+  activity: 'normal',
+  weight: 3.5,
+  target: 3.0,
+  treatMode: 'perPiece',
+  treatKcalPiece: 10,
+  treatKcal100: 350,
+  treatPieceG: 5,
+  foodId: '__manual',
+  foodKcal: 360,
+  bag: 0,
+  size: '超小型犬',
+  log: []
+};
+let lastFilterKey = null;
+
+/* ===================== setup ===================== */
+function populateBreeds() {
+  const sel = $('#breed');
+  const groups = {};
+  SIZE_ORDER.forEach(function (s) { groups[s] = []; });
+  const others = [];
+  BREEDS.forEach(function (b) {
+    if (b.size && groups[b.size]) groups[b.size].push(b);
+    else others.push(b);
+  });
+  let html = '';
+  SIZE_ORDER.forEach(function (size) {
+    if (!groups[size].length) return;
+    html += '<optgroup label="' + size + '">';
+    groups[size].forEach(function (b) {
+      html += '<option value="' + esc(b.id) + '">' + esc(b.name) + '</option>';
+    });
+    html += '</optgroup>';
+  });
+  if (others.length) {
+    html += '<optgroup label="その他">';
+    others.forEach(function (b) {
+      html += '<option value="' + esc(b.id) + '">' + esc(b.name) + '</option>';
+    });
+    html += '</optgroup>';
+  }
+  sel.innerHTML = html;
+}
+
+function restoreState() {
+  let saved = null;
+  try { saved = JSON.parse(localStorage.getItem(LS_INPUT) || 'null'); } catch (e) { saved = null; }
+  if (saved && typeof saved === 'object') {
+    ['mode', 'breed', 'age', 'neutered', 'activity', 'treatMode'].forEach(function (k) {
+      if (typeof saved[k] === 'string') state[k] = saved[k];
+    });
+    ['weight', 'target', 'treatKcalPiece', 'treatKcal100', 'treatPieceG', 'foodKcal', 'bag'].forEach(function (k) {
+      if (Number.isFinite(saved[k])) state[k] = saved[k];
+    });
+    if (typeof saved.foodId === 'string') state.foodId = saved.foodId;
+  }
+  try {
+    const log = JSON.parse(localStorage.getItem(LS_LOG) || '[]');
+    state.log = Array.isArray(log) ? log.filter(function (e) { return e && typeof e.date === 'string' && Number.isFinite(e.weight); }) : [];
+  } catch (e) { state.log = []; }
+
+  if (!$('#breed').querySelector('option[value="' + state.breed + '"]')) state.breed = 'toypoodle';
+  $('#breed').value = state.breed;
+  $('#age').value = state.age;
+  $('#neuter').value = state.neutered;
+  $('#activity').value = state.activity;
+  $('#weight').value = kg(state.weight);
+  $('#target').value = kg(state.target);
+  $('#foodKcal').value = state.foodKcal;
+  $('#bagRemaining').value = state.bag > 0 ? state.bag : '';
+  $('#treatPieceKcal').value = state.treatKcalPiece;
+  $('#treat100Kcal').value = state.treatKcal100;
+  $('#treatPieceG').value = state.treatPieceG;
+  applyModeClasses();
+  applyTreatModeClasses();
+  $('#logDate').value = todayISO();
+}
+
+function saveState() {
+  const data = {
+    mode: state.mode, breed: state.breed, age: state.age, neutered: state.neutered,
+    activity: state.activity, weight: state.weight, target: state.target,
+    treatMode: state.treatMode, treatKcalPiece: state.treatKcalPiece,
+    treatKcal100: state.treatKcal100, treatPieceG: state.treatPieceG,
+    foodId: state.foodId, foodKcal: state.foodKcal, bag: state.bag
+  };
+  try { localStorage.setItem(LS_INPUT, JSON.stringify(data)); } catch (e) {}
+}
+function saveLog() {
+  try { localStorage.setItem(LS_LOG, JSON.stringify(state.log)); } catch (e) {}
+}
+
+/* ===================== form reading ===================== */
+function readForm() {
+  state.breed = $('#breed').value;
+  state.age = $('#age').value;
+  state.neutered = $('#neuter').value;
+  state.activity = $('#activity').value;
+  state.weight = parseFloat($('#weight').value);
+  state.target = parseFloat($('#target').value);
+  state.treatKcalPiece = parseFloat($('#treatPieceKcal').value);
+  state.treatKcal100 = parseFloat($('#treat100Kcal').value);
+  state.treatPieceG = parseFloat($('#treatPieceG').value);
+  state.foodId = $('#foodSelect').value || state.foodId || '__manual';
+  state.foodKcal = parseFloat($('#foodKcal').value);
+  state.bag = parseFloat($('#bagRemaining').value) || 0;
+  state.size = resolveSize();
+}
+
+function resolveSize() {
+  const breed = BREEDS.filter(function (b) { return b.id === state.breed; })[0];
+  if (breed && breed.size) return breed.size;
+  const w = safeNum(state.weight, 0);
+  if (w > 0) {
+    if (w < 4) return '超小型犬';
+    if (w < 10) return '小型犬';
+    if (w < 25) return '中型犬';
+    return '大型犬';
+  }
+  return '小型犬';
+}
+
+function currentStage() {
+  return (state.age === 'puppy' || state.age === 'puppy0') ? '子犬' : state.age === 'senior' ? '高齢犬' : '成犬';
+}
+
+/* ===================== mode UI ===================== */
+function applyModeClasses() {
+  const simple = state.mode === 'simple';
+  $$('.full-only').forEach(function (el) { el.classList.toggle('is-hidden', simple); });
+  $('#modeSimple').classList.toggle('is-active', simple);
+  $('#modeFull').classList.toggle('is-active', !simple);
+  $('#modeSimple').setAttribute('aria-pressed', String(simple));
+  $('#modeFull').setAttribute('aria-pressed', String(!simple));
+  $('#modeNote').textContent = simple
+    ? 'かんたんモード：避妊・去勢済み成犬の標準値（サイズ別 kcal/kg）で計算します。入力は犬種と体重だけ。'
+    : 'しっかりモード：年齢・避妊/去勢・活動量から、より細かく計算します。';
+  $('#ageSimpleHint').classList.toggle('is-hidden', !simple);
+}
+
+function applyTreatModeClasses() {
+  const perPiece = state.treatMode !== 'per100';
+  $('#treatPieceField').classList.toggle('is-hidden', !perPiece);
+  $('#treat100Fields').classList.toggle('is-hidden', perPiece);
+  $('#treatPerPiece').classList.toggle('is-active', perPiece);
+  $('#treatPer100').classList.toggle('is-active', !perPiece);
+  $('#treatPerPiece').setAttribute('aria-pressed', String(perPiece));
+  $('#treatPer100').setAttribute('aria-pressed', String(!perPiece));
+}
+
+/* ===================== food options ===================== */
+function sizeMatches(foodSize, dogSize) {
+  if (foodSize === '全犬種' || foodSize === dogSize) return true;
+  if (dogSize === '超小型犬' && foodSize === '小型犬') return true;
+  return false;
+}
+
+function filteredFoods() {
+  const size = resolveSize();
+  const stage = currentStage();
+  const showAll = $('#showAllFoods').checked;
+  if (showAll) return FOODS.slice();
+  let list = FOODS.filter(function (f) {
+    const sizeOk = sizeMatches(f.size, size);
+    const stageOk = f.life_stage === 'オールステージ' || f.life_stage === stage;
+    return sizeOk && stageOk;
+  });
+  if (!list.length) {
+    list = FOODS.filter(function (f) { return sizeMatches(f.size, size); });
+  }
+  if (!list.length) list = FOODS.slice();
+  return list;
+}
+
+function renderFoodOptions() {
+  const sel = $('#foodSelect');
+  const current = FOODS.filter(function (f) { return f.id === state.foodId; })[0];
+  let list = filteredFoods();
+  if (current && list.indexOf(current) === -1) list = [current].concat(list);
+
+  const byBrand = {};
+  const brandOrder = [];
+  list.forEach(function (f) {
+    if (!byBrand[f.brand]) { byBrand[f.brand] = []; brandOrder.push(f.brand); }
+    byBrand[f.brand].push(f);
+  });
+
+  let html = '<option value="__manual">— フードを手入力する —</option>';
+  brandOrder.forEach(function (brand) {
+    html += '<optgroup label="' + esc(brand) + '">';
+    byBrand[brand].forEach(function (f) {
+      html += '<option value="' + esc(f.id) + '">' + esc(f.product) + '（' + f.kcal_per_100g + 'kcal/100g）</option>';
+    });
+    html += '</optgroup>';
+  });
+  sel.innerHTML = html;
+  sel.value = current ? current.id : '__manual';
+  state.foodId = sel.value;
+  updateFoodLabel();
+}
+
+function updateFoodLabel() {
+  const el = $('#foodSelectedLabel');
+  if (!el) return;
+  const f = FOODS.filter(function (x) { return x.id === state.foodId; })[0];
+  if (f) {
+    el.innerHTML = '選択中：<b>' + esc(f.brand) + ' ' + esc(f.product) + '</b>　<span class="kcal-sm">' + f.kcal_per_100g + ' kcal/100g</span>' +
+      (f.source ? '　<a href="' + esc(f.source) + '" target="_blank" rel="noopener">出典</a>' : '');
+  } else {
+    el.textContent = 'カロリーがわからない場合は、上の候補から選ぶか、100gあたりのkcalを入力してください。';
+  }
+}
+
+function pickCandidates(status) {
+  const size = resolveSize();
+  const stage = currentStage();
+  let pool = FOODS.filter(function (f) {
+    return sizeMatches(f.size, size) && (f.life_stage === 'オールステージ' || f.life_stage === stage);
+  });
+  if (pool.length < 4) {
+    const extra = FOODS.filter(function (f) {
+      return pool.indexOf(f) === -1 && sizeMatches(f.size, size);
+    });
+    pool = pool.concat(extra);
+  }
+  if (!pool.length) pool = FOODS.slice();
+
+  function score(f) {
+    let s = 0;
+    if (f.size === size) s += 2;
+    else if (sizeMatches(f.size, size)) s += 1;
+    if (f.life_stage === stage) s += 2;
+    if (status === 'loss' && f.diet) s += 1;
+    if (status !== 'loss' && f.diet) s -= 1;
+    if (f.confidence === 'high') s += 1;
+    return s;
+  }
+  const ranked = pool.slice().sort(function (a, b) { return score(b) - score(a); });
+  const picked = [];
+  const seenBrand = {};
+  ranked.forEach(function (f) {
+    if (picked.length >= 4) return;
+    if (seenBrand[f.brand]) return;
+    seenBrand[f.brand] = true;
+    picked.push(f);
+  });
+  if (picked.length < 4) {
+    ranked.forEach(function (f) {
+      if (picked.length >= 4) return;
+      if (picked.indexOf(f) === -1) picked.push(f);
+    });
+  }
+  if (status === 'loss' && picked.length && !picked.some(function (f) { return f.diet; })) {
+    const diet = ranked.filter(function (f) { return f.diet && picked.indexOf(f) === -1; })[0];
+    if (diet) picked[picked.length - 1] = diet;
+  }
+  return picked.slice(0, 4);
+}
+
+function renderCandidates(status) {
+  const el = $('#candidates');
+  if (!el) return;
+  const picked = pickCandidates(status);
+  if (!picked.length) {
+    el.innerHTML = '<p class="hint">フード候補がありません。カロリーを手入力してください。</p>';
+    return;
+  }
+  el.innerHTML = picked.map(function (f) {
+    const tags = [];
+    if (f.size !== '全犬種') tags.push('<span class="tag">' + esc(f.size) + '</span>');
+    if (f.life_stage !== 'オールステージ') tags.push('<span class="tag">' + esc(f.life_stage) + '</span>');
+    if (f.diet) tags.push('<span class="tag diet">ダイエット用</span>');
+    if (f.confidence !== 'high') tags.push('<span class="tag note">目安</span>');
+    return '<button type="button" class="cand' + (f.id === state.foodId ? ' is-active' : '') + '" data-food-id="' + esc(f.id) + '">' +
+      '<span class="brand">' + esc(f.brand) + '</span>' +
+      '<span class="product" title="' + esc(f.product) + '">' + esc(f.product) + '</span>' +
+      '<span class="kcal-sm">' + f.kcal_per_100g + ' kcal / 100g</span>' +
+      '<span class="tags">' + tags.join('') + '</span>' +
+      '</button>';
+  }).join('');
+}
+
+/* ===================== result ===================== */
+function statusMeta(status) {
+  if (status === 'loss') return { label: '減量プラン', icon: '📉', badge: 'badge-loss' };
+  if (status === 'gain') return { label: '増量プラン', icon: '📈', badge: 'badge-gain' };
+  return { label: '維持プラン', icon: '⚖️', badge: 'badge-maintain' };
+}
+
+function row(label, value, primary) {
+  return '<div class="rrow' + (primary ? ' is-primary' : '') + '"><span>' + label + '</span><b>' + value + '</b></div>';
+}
+
+function renderResult(c) {
+  const box = $('#resultBody');
+  if (!c.valid) {
+    updateMobileBar(c);
+    box.innerHTML =
+      '<div class="result-empty">' +
+      '<div class="empty-emoji">🐶</div>' +
+      '<p>現在の体重と目標体重を入力してください</p>' +
+      '<p class="hint">0.5〜120kgの範囲で計算できます</p>' +
+      '</div>';
+    return;
+  }
+  updateMobileBar(c);
+  const meta = statusMeta(c.status);
+  const kcal = Math.round(c.allowance);
+  const treatLimit = Math.round(c.treatLimit);
+
+  let treatTxt;
+  if (c.pieces === null) treatTxt = 'カロリーを入力';
+  else treatTxt = c.pieces + '個まで' + (c.perPiece > 0 ? '（1個 ' + fmt(c.perPiece, 1) + 'kcal）' : '');
+
+  const foodMain = c.foodGrams === null ? 'フードkcalを入力' : fmtInt(c.foodGrams) + ' g/日';
+  const foodNoTreat = c.foodGramsNoTreat === null ? '—' : fmtInt(c.foodGramsNoTreat) + ' g/日';
+  const perMeal = c.perMeal === null ? '—' : '約' + fmtInt(c.perMeal) + ' g × 2回';
+
+  let rows = '';
+  rows += row('フード（おやつ上限まで）', foodMain, true);
+  rows += row('おやつ', treatTxt);
+  rows += row('フード（おやつなし）', foodNoTreat);
+  rows += row('1回あたり（1日2回）', perMeal);
+  if (c.bagDays !== null) {
+    rows += row('フード残り ' + fmtInt(c.bag) + 'g', c.bagDays > 0 ? '約' + c.bagDays + '日分' : '1日分未満');
+  }
+
+  let planHTML = buildPlanHTML(c, meta);
+  let warningsHTML = '';
+  if (c.warnings.length) {
+    warningsHTML = '<ul class="warn-list">' + c.warnings.map(function (w) {
+      return '<li>⚠️ ' + esc(w) + '</li>';
+    }).join('') + '</ul>';
+  }
+  let notesHTML = '';
+  if (c.notes.length) {
+    notesHTML = '<ul class="warn-list">' + c.notes.map(function (n) {
+      return '<li>💡 ' + esc(n) + '</li>';
+    }).join('') + '</ul>';
+  }
+
+  box.innerHTML =
+    '<div class="result-top">' +
+    '<span class="badge ' + meta.badge + '">' + meta.icon + ' ' + meta.label + '</span>' +
+    '<span class="hint">' + kg(c.w) + 'kg → ' + kg(c.t) + 'kg</span>' +
+    '</div>' +
+    '<div class="result-sub">1日にあげていいカロリー</div>' +
+    '<div class="result-kcal"><b>' + fmtInt(kcal) + '</b><span>kcal</span></div>' +
+    '<div class="result-note">うち、おやつは <b>' + fmtInt(treatLimit) + 'kcal</b>（1日の10%）まで。</div>' +
+    '<div class="rrows">' + rows + '</div>' +
+    planHTML +
+    warningsHTML +
+    notesHTML +
+    detailsHTML(c) +
+    '<div class="actions">' +
+    '<button type="button" class="btn btn-primary" id="copyBtn">📋 結果をコピー</button>' +
+    '<button type="button" class="btn btn-ghost" id="printBtn">🖨 印刷・PDF保存</button>' +
+    '</div>' +
+    '<p class="result-foot">※ 計算は一般的な目安です。持病・妊娠・授乳中は獣医師に相談してください。</p>';
+
+  $('#copyBtn').addEventListener('click', function () { copySummary(c); });
+  $('#printBtn').addEventListener('click', function () { window.print(); });
+}
+
+function buildPlanHTML(c, meta) {
+  if (c.status === 'maintain') {
+    return '<div class="plan-box">' +
+      '<div class="plan-head">⚖️ 維持プラン</div>' +
+      '<p class="plan-main">現在の体重 <em>' + kg(c.w) + 'kg</em> をキープ</p>' +
+      '<p class="plan-note">目標との差がほとんどありません。今の給与量を目安に続けましょう。</p>' +
+      '</div>';
+  }
+  const loss = c.status === 'loss';
+  const sign = loss ? '-' : '+';
+  const paceMin = Math.round(c.plan.paceSlow * 1000); /* g/週 */
+  const paceMax = Math.round(c.plan.paceFast * 1000);
+  const paceTxt = '週 ' + sign + fmtInt(paceMin) + '〜' + fmtInt(paceMax) + 'g';
+
+  function weeksTxt(a, b) {
+    const f = function (x) { return x < 1 ? '1週間未満' : Math.ceil(x) + '週間'; };
+    const fa = f(a); const fb = f(b);
+    return fa === fb ? fa : fa + '〜' + fb;
+  }
+  function monthsTxt(d1, d2) {
+    const f = function (d) { return d.getFullYear() + '年' + (d.getMonth() + 1) + '月'; };
+    const a = f(d1); const b = f(d2);
+    if (a === b) return a + '頃';
+    if (d1.getFullYear() === d2.getFullYear()) return a + '〜' + (d2.getMonth() + 1) + '月頃';
+    return a + '〜' + b + '頃';
+  }
+  const pct = Math.round((Math.abs(c.diff) / c.w) * 100);
+
+  return '<div class="plan-box">' +
+    '<div class="plan-head">' + (loss ? '📉 減量プラン' : '📈 増量プラン') + '</div>' +
+    '<p class="plan-main">' + kg(c.w) + 'kg → <em>' + kg(c.t) + 'kg</em>（' + sign + Math.abs(c.diff).toFixed(1) + 'kg・' + pct + '%）</p>' +
+    '<div class="plan-grid">' +
+    '<div class="plan-cell"><span>安全なペース</span><b>' + paceTxt + '</b></div>' +
+    '<div class="plan-cell"><span>かかる期間</span><b>約' + weeksTxt(c.plan.weeksFast, c.plan.weeksSlow) + '</b></div>' +
+    '<div class="plan-cell span2"><span>到達の目安</span><b>' + monthsTxt(c.plan.dateFast, c.plan.dateSlow) + '</b></div>' +
+    '</div>' +
+    '<p class="plan-note" style="margin-top:10px">体重の1〜2%を1週間で変えるペースです。' + (loss ? '減量中は目標体重の安静時カロリー（RER）を目安に。' : '増量中は目標体重の維持カロリーの15%増を目安に。') + '途中で体重を測り、ペースを調整してください。</p>' +
+    '</div>';
+}
+
+function detailsHTML(c) {
+  const lines = [];
+  lines.push('現在体重 ' + kg(c.w) + 'kg のRER：' + fmtInt(c.rerCurrent) + ' kcal');
+  if (c.full) {
+    let factorTxt = 'RER × ' + c.factor.toFixed(2);
+    if (Math.abs(c.activityMult - 1) > 0.001) factorTxt += '（活動量 ×' + c.activityMult.toFixed(2) + '）';
+    lines.push('維持カロリー：' + fmtInt(c.mainCurrent) + ' kcal（' + factorTxt + '）');
+  } else {
+    lines.push('維持カロリー：' + fmtInt(c.mainCurrent) + ' kcal（体重 × ' + SIZE_KCAL_PER_KG[c.size] + ' kcal/kg）');
+  }
+  if (c.status === 'loss') {
+    lines.push('減量中の給与カロリー：' + fmtInt(c.allowance) + ' kcal（目標体重のRER ' + fmtInt(c.rerTarget) + ' kcal）');
+  } else if (c.status === 'gain') {
+    lines.push('増量中の給与カロリー：' + fmtInt(c.allowance) + ' kcal（目標体重の維持カロリー × 1.15）');
+  }
+  lines.push('おやつ上限（10%）：' + fmtInt(c.treatLimit) + ' kcal');
+  if (c.foodKcal > 0) lines.push('フード：' + fmtInt(c.foodKcal) + ' kcal/100g → 1日 ' + fmtInt(c.foodGrams) + ' g');
+  if (c.perPiece > 0) lines.push('おやつ1個：' + fmt(c.perPiece, 1) + ' kcal → 上限 ' + c.pieces + ' 個');
+  if (c.bagDays !== null) lines.push('フード残り：' + fmtInt(c.bag) + ' g → 約' + c.bagDays + '日分');
+
+  return '<details class="acc">' +
+    '<summary>計算のくわしい内容</summary>' +
+    '<div class="acc-body">' +
+    '<ul>' + lines.map(function (l) { return '<li>' + esc(l) + '</li>'; }).join('') + '</ul>' +
+    '<p>RER（安静時エネルギー要求量）＝ 70 × 体重(kg)^0.75。' + (c.full ? '年齢・避妊/去勢・活動量の係数をかけています。' : 'かんたんモードはサイズ別のkcal/kg（避妊・去勢済み成犬の標準的な目安）で計算しています。') + '</p>' +
+    '</div>' +
+    '</details>';
+}
+
+/* ===================== copy ===================== */
+function summaryText(c) {
+  const meta = statusMeta(c.status);
+  const lines = [];
+  lines.push('【わんごはん計算機】');
+  lines.push('1日にあげていいカロリー：' + fmtInt(c.allowance) + ' kcal（' + meta.label + '）');
+  lines.push('うちおやつ：' + fmtInt(c.treatLimit) + ' kcal（10%）まで＝' + (c.pieces === null ? '—' : c.pieces + '個'));
+  lines.push('フード（おやつ上限まで）：' + (c.foodGrams === null ? '—' : fmtInt(c.foodGrams) + ' g/日'));
+  lines.push('フード（おやつなし）：' + (c.foodGramsNoTreat === null ? '—' : fmtInt(c.foodGramsNoTreat) + ' g/日'));
+  lines.push('1回あたり（1日2回）：' + (c.perMeal === null ? '—' : fmtInt(c.perMeal) + ' g'));
+  lines.push('体重：' + kg(c.w) + 'kg → ' + kg(c.t) + 'kg');
+  if (c.plan) {
+    lines.push('ペース：週 ' + (c.status === 'loss' ? '-' : '+') + Math.round(c.plan.paceSlow * 1000) + '〜' + Math.round(c.plan.paceFast * 1000) + 'g');
+  }
+  if (c.bagDays !== null) lines.push('フード残り：約' + c.bagDays + '日分');
+  return lines.join('\n');
+}
+
+function copySummary(c) {
+  const txt = summaryText(c);
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(txt).then(function () {
+      toast('結果をコピーしました 📋');
+    }).catch(function () { fallbackCopy(txt); });
+  } else {
+    fallbackCopy(txt);
+  }
+}
+function fallbackCopy(txt) {
+  const ta = document.createElement('textarea');
+  ta.value = txt;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  let ok = false;
+  try { ok = document.execCommand('copy'); } catch (e) {}
+  ta.remove();
+  toast(ok ? '結果をコピーしました 📋' : 'コピーできませんでした');
+}
+
+/* ===================== toast ===================== */
+let toastTimer = null;
+function toast(msg) {
+  const el = $('#toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function () { el.classList.remove('show'); }, 2200);
+}
+
+/* ===================== weight log ===================== */
+function renderLog() {
+  const entries = state.log.slice().sort(function (a, b) { return a.date.localeCompare(b.date); });
+  renderChart(entries);
+
+  const list = $('#logList');
+  const recent = entries.slice().reverse().slice(0, 8);
+  list.innerHTML = recent.map(function (e) {
+    const d = isoToDate(e.date);
+    return '<li class="log-item">' +
+      '<span class="date">' + d.getFullYear() + '/' + (d.getMonth() + 1) + '/' + d.getDate() + '</span>' +
+      '<span class="w">' + kg(e.weight) + ' kg</span>' +
+      '<button type="button" class="del" data-date="' + esc(e.date) + '" aria-label="この記録を削除">×</button>' +
+      '</li>';
+  }).join('');
+  $('#logEmpty').style.display = entries.length ? 'none' : 'block';
+}
+
+function renderChart(entries) {
+  const svg = $('#logChart');
+  const W = 600, H = 220;
+  const P = { l: 42, r: 16, t: 18, b: 30 };
+
+  if (!entries.length) {
+    svg.innerHTML = '<text x="300" y="112" text-anchor="middle" class="chart-axis">まだ記録がありません</text>' +
+      '<text x="300" y="132" text-anchor="middle" class="chart-axis">日付と体重を入れて「記録する」を押すとグラフが出ます</text>';
+    return;
+  }
+
+  let min = Infinity, max = -Infinity;
+  entries.forEach(function (e) { min = Math.min(min, e.weight); max = Math.max(max, e.weight); });
+  const targetW = safeNum(state.target, 0);
+  if (targetW > 0 && targetW >= 0.5 && targetW <= 120) { min = Math.min(min, targetW); max = Math.max(max, targetW); }
+  let span = max - min;
+  if (span < 1) span = 1;
+  min = Math.floor((min - span * 0.18) * 10) / 10;
+  max = Math.ceil((max + span * 0.18) * 10) / 10;
+  if (max - min < 0.5) { min -= 0.3; max += 0.3; }
+
+  function xAt(ms) { return P.l + (ms - dmin) / (dmax - dmin) * (W - P.l - P.r); }
+  function yAt(w) { return P.t + (max - w) / (max - min) * (H - P.t - P.b); }
+
+  const times = entries.map(function (e) { return isoToDate(e.date).getTime(); });
+  let dmin = Math.min.apply(null, times);
+  let dmax = Math.max.apply(null, times);
+  if (dmin === dmax) { dmin -= 86400000; dmax += 86400000; }
+
+  let html = '';
+  const gridVals = [min, (min + max) / 2, max];
+  gridVals.forEach(function (v) {
+    const yy = yAt(v);
+    html += '<line x1="' + P.l + '" y1="' + yy.toFixed(1) + '" x2="' + (W - P.r) + '" y2="' + yy.toFixed(1) + '" class="chart-grid"/>';
+    html += '<text x="' + (P.l - 8) + '" y="' + (yy + 3.5).toFixed(1) + '" text-anchor="end" class="chart-axis">' + round(v, 1) + '</text>';
+  });
+
+  if (targetW > 0 && targetW >= min && targetW <= max) {
+    const gy = yAt(targetW);
+    html += '<line x1="' + P.l + '" y1="' + gy.toFixed(1) + '" x2="' + (W - P.r) + '" y2="' + gy.toFixed(1) + '" class="chart-goal"/>';
+  }
+
+  const pts = entries.map(function (e, i) {
+    return { x: xAt(times[i]), y: yAt(e.weight), w: e.weight };
+  });
+  if (pts.length > 1) {
+    html += '<polyline class="chart-line" points="' + pts.map(function (p) { return p.x.toFixed(1) + ',' + p.y.toFixed(1); }).join(' ') + '"/>';
+  }
+  pts.forEach(function (p) {
+    html += '<circle class="chart-dot" cx="' + p.x.toFixed(1) + '" cy="' + p.y.toFixed(1) + '" r="4"/>';
+  });
+
+  function md(d) { return (d.getMonth() + 1) + '/' + d.getDate(); }
+  html += '<text x="' + P.l + '" y="' + (H - 8) + '" text-anchor="start" class="chart-axis">' + md(isoToDate(entries[0].date)) + '</text>';
+  if (entries.length > 1) {
+    html += '<text x="' + (W - P.r) + '" y="' + (H - 8) + '" text-anchor="end" class="chart-axis">' + md(isoToDate(entries[entries.length - 1].date)) + '</text>';
+  }
+  const last = pts[pts.length - 1];
+  html += '<text x="' + Math.min(last.x + 8, W - P.r - 2) + '" y="' + (last.y - 9) + '" text-anchor="end" class="chart-axis" style="fill:#d9622a;font-weight:800">' + kg(last.w) + 'kg</text>';
+
+  svg.innerHTML = html;
+}
+
+function addLogEntry() {
+  const date = $('#logDate').value || todayISO();
+  let weight = parseFloat($('#logWeight').value);
+  if (!Number.isFinite(weight) || weight <= 0) weight = safeNum(state.weight, NaN);
+  if (!Number.isFinite(weight) || weight <= 0 || weight > 120) {
+    toast('体重を正しく入力してください');
+    return;
+  }
+  state.log = state.log.filter(function (e) { return e.date !== date; });
+  state.log.push({ date: date, weight: weight });
+  state.log.sort(function (a, b) { return a.date.localeCompare(b.date); });
+  if (state.log.length > 90) state.log = state.log.slice(-90);
+  saveLog();
+  renderLog();
+  $('#logWeight').value = '';
+  toast('体重を記録しました 🐾');
+}
+
+/* ===================== hints ===================== */
+function updateHints(c) {
+  const breed = BREEDS.filter(function (b) { return b.id === state.breed; })[0];
+  const hint = $('#breedHint');
+  if (breed && breed.min) {
+    if (breed.min === breed.max) {
+      hint.textContent = '成犬の体重目安：約' + breed.min + 'kg（個体差あり・' + breed.size + '）';
+    } else {
+      hint.textContent = '成犬の体重目安：約' + breed.min + '〜' + breed.max + 'kg（' + breed.size + '）';
+    }
+  } else {
+    hint.textContent = '体重からサイズ（超小型〜大型）を判定して計算します';
+  }
+
+  const th = $('#targetHint');
+  if (!c.valid) {
+    th.textContent = '現在の体重と目標体重を入れると、減量・増量のペースまで計算します。';
+    return;
+  }
+  if (c.status === 'maintain') {
+    th.innerHTML = '目標との差はほとんどありません。<b>今の体重をキープ</b>する給与量を計算します。';
+  } else {
+    const diff = Math.abs(c.diff).toFixed(1);
+    th.innerHTML = (c.status === 'loss'
+      ? '現在より <b>' + diff + 'kg 少ない</b>目標です。無理のないペースで減量しましょう。'
+      : '現在より <b>' + diff + 'kg 多い</b>目標です。少しずつ増やしていきましょう。');
+  }
+}
+
+function updateTreatEffective() {
+  const perPiece = state.treatMode === 'per100'
+    ? safeNum(state.treatKcal100) * safeNum(state.treatPieceG) / 100
+    : safeNum(state.treatKcalPiece);
+  const el = $('#treatEffective');
+  if (perPiece > 0) {
+    el.innerHTML = '1個あたり <b>約' + round(perPiece, 1) + 'kcal</b> として、あげていい個数を計算します。';
+  } else {
+    el.textContent = 'おやつのカロリーを入力すると、あげていい個数を計算します。';
+  }
+}
+
+/* ===================== update loop ===================== */
+function update(changed) {
+  readForm();
+  applyModeClasses();
+  applyTreatModeClasses();
+  updateTreatEffective();
+
+  const size = resolveSize();
+  state.size = size;
+  const filterKey = size + '|' + state.age + '|' + $('#showAllFoods').checked;
+
+  const breedInfo = BREEDS.filter(function (b) { return b.id === state.breed; })[0] || null;
+  const calc = compute({
+    mode: state.mode,
+    age: state.age,
+    neutered: state.neutered,
+    activity: state.activity,
+    weight: state.weight,
+    target: state.target,
+    size: size,
+    treatMode: state.treatMode,
+    treatKcalPiece: state.treatKcalPiece,
+    treatKcal100: state.treatKcal100,
+    treatPieceG: state.treatPieceG,
+    foodKcal: state.foodKcal,
+    bag: state.bag,
+    breedInfo: breedInfo
+  });
+
+  if (filterKey !== lastFilterKey) {
+    lastFilterKey = filterKey;
+    renderFoodOptions();
+    renderCandidates(calc.valid ? calc.status : 'maintain');
+  }
+  updateFoodLabel();
+  renderResult(calc);
+  updateHints(calc);
+  saveState();
+}
+
+/* ===================== events ===================== */
+function bindEvents() {
+  $('#modeSimple').addEventListener('click', function () {
+    state.mode = 'simple';
+    update('mode');
+  });
+  $('#modeFull').addEventListener('click', function () {
+    state.mode = 'full';
+    update('mode');
+  });
+
+  $('#breed').addEventListener('change', function () { update('breed'); });
+  $('#age').addEventListener('change', function () { update('age'); });
+  $('#neuter').addEventListener('change', function () { update('neuter'); });
+  $('#activity').addEventListener('change', function () { update('activity'); });
+
+  ['weight', 'target', 'foodKcal', 'bagRemaining', 'treatPieceKcal', 'treat100Kcal', 'treatPieceG'].forEach(function (id) {
+    $('#' + id).addEventListener('input', function () { update('input'); });
+  });
+
+  $('#foodSelect').addEventListener('change', function () {
+    const id = $('#foodSelect').value;
+    state.foodId = id;
+    if (id !== '__manual') {
+      const f = FOODS.filter(function (x) { return x.id === id; })[0];
+      if (f) $('#foodKcal').value = f.kcal_per_100g;
+    }
+    updateFoodLabel();
+    update('food');
+  });
+
+  $('#showAllFoods').addEventListener('change', function () {
+    lastFilterKey = null;
+    update('foodFilter');
+  });
+
+  $('#treatPerPiece').addEventListener('click', function () {
+    state.treatMode = 'perPiece';
+    update('treat');
+  });
+  $('#treatPer100').addEventListener('click', function () {
+    state.treatMode = 'per100';
+    update('treat');
+  });
+
+  $('#candidates').addEventListener('click', function (e) {
+    const btn = e.target.closest('[data-food-id]');
+    if (!btn) return;
+    const f = FOODS.filter(function (x) { return x.id === btn.getAttribute('data-food-id'); })[0];
+    if (!f) return;
+    state.foodId = f.id;
+    state.foodKcal = f.kcal_per_100g;
+    $('#foodKcal').value = f.kcal_per_100g;
+    renderFoodOptions();
+    updateFoodLabel();
+    update('cand');
+    toast(f.brand + ' ' + f.product + ' をセットしました');
+  });
+
+  $('#logAdd').addEventListener('click', addLogEntry);
+  $('#logWeight').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') addLogEntry();
+  });
+  $('#logList').addEventListener('click', function (e) {
+    const btn = e.target.closest('.del');
+    if (!btn) return;
+    const date = btn.getAttribute('data-date');
+    state.log = state.log.filter(function (x) { return x.date !== date; });
+    saveLog();
+    renderLog();
+  });
+
+  $('#weight').addEventListener('change', function () {
+    if (!$('#logWeight').value) $('#logWeight').value = $('#weight').value;
+  });
+}
+
+/* ===================== mobile bar ===================== */
+function updateMobileBar(c) {
+  const bar = $('#mobileBar');
+  if (!bar) return;
+  if (!c.valid) {
+    bar.dataset.ready = '0';
+    bar.classList.remove('show');
+    return;
+  }
+  $('#mbKcal').textContent = fmtInt(Math.round(c.allowance));
+  $('#mbFood').textContent = c.foodGrams === null ? '—' : 'フード ' + fmtInt(c.foodGrams) + 'g';
+  bar.dataset.ready = '1';
+}
+
+function setupMobileBar() {
+  const bar = $('#mobileBar');
+  const result = $('.result-card');
+  if (!bar || !result) return;
+  $('#mbBtn').addEventListener('click', function () {
+    result.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+  if (!('IntersectionObserver' in window)) return;
+  const io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (en) {
+      const show = !en.isIntersecting && bar.dataset.ready === '1';
+      bar.classList.toggle('show', show);
+    });
+  }, { rootMargin: '-10% 0px -35% 0px', threshold: 0 });
+  io.observe(result);
+}
+
+/* ===================== init ===================== */
+function init() {
+  populateBreeds();
+  $('#foodCount').textContent = FOODS.length;
+  $('#dataMeta').textContent = 'データ更新：2026年11月（フード' + FOODS.length + '商品・犬種' + (BREEDS.length - 1) + '種）';
+  restoreState();
+  bindEvents();
+  update('init');
+  renderLog();
+  setupMobileBar();
+}
+
+init();
+</script>
+
+</body>
+</html>
