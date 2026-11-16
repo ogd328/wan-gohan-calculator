@@ -188,6 +188,7 @@ select:disabled{opacity:.6;cursor:not-allowed}
 }
 .selected-label b{color:var(--ink)}
 .selected-label .kcal-sm{color:var(--accent-deep);font-weight:700}
+.selected-label .kcal-src{font-size:10.5px;color:var(--ink-mute);font-weight:600;margin-left:2px}
 .cand-block{margin-top:20px;border-top:1px dashed var(--line);padding-top:16px}
 .cand-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:10px}
 .cand-head h3{font-size:13.5px;margin:0;color:#6b5446}
@@ -543,7 +544,7 @@ details.acc[open] summary::after{transform:rotate(180deg)}
           <span class="step">2</span>
           <div>
             <h2>手持ちのフード</h2>
-            <p class="card-sub">パッケージのカロリーがわからなければ、候補から選べます（<span id="foodCount">32</span>商品収録）</p>
+            <p class="card-sub">パッケージのカロリーがわからなければ、候補から選べます（<span id="foodCount">32</span>商品収録・数値は目安）</p>
           </div>
         </div>
 
@@ -580,10 +581,10 @@ details.acc[open] summary::after{transform:rotate(180deg)}
         <div class="cand-block">
           <div class="cand-head">
             <h3>犬種に合うフード候補</h3>
-            <p>タップでカロリーを入力</p>
+            <p>タップでカロリーを入力（数値は目安）</p>
           </div>
           <div class="cand-grid" id="candidates"></div>
-          <p class="hint" style="margin-top:9px">候補にないフードは「フードを手入力する」を選び、パッケージのkcalを入れてください。候補の数値は目安です。</p>
+          <p class="hint" style="margin-top:9px">候補にないフードは「フードを手入力する」を選び、パッケージのkcalを入れてください。候補のカロリーは目安です。パッケージ記載値を優先してください。</p>
         </div>
       </section>
 
@@ -1752,7 +1753,9 @@ function updateFoodLabel() {
   if (!el) return;
   const f = FOODS.filter(function (x) { return x.id === state.foodId; })[0];
   if (f) {
+    const kcalNote = f.confidence === 'high' ? 'メーカー公表値' : '目安';
     el.innerHTML = '選択中：<b>' + esc(f.brand) + ' ' + esc(f.product) + '</b>　<span class="kcal-sm">' + f.kcal_per_100g + ' kcal/100g</span>' +
+      '<span class="kcal-src">（' + kcalNote + '）</span>' +
       (f.source ? '　<a href="' + esc(f.source) + '" target="_blank" rel="noopener">出典</a>' : '');
   } else {
     el.textContent = 'カロリーがわからない場合は、上の候補から選ぶか、100gあたりのkcalを入力してください。';
@@ -1905,7 +1908,10 @@ function renderResult(c) {
     '<button type="button" class="btn btn-primary" id="copyBtn">📋 結果をコピー</button>' +
     '<button type="button" class="btn btn-ghost" id="printBtn">🖨 印刷・PDF保存</button>' +
     '</div>' +
-    '<p class="result-foot">※ 計算は一般的な目安です。持病・妊娠・授乳中は獣医師に相談してください。</p>';
+    '<p class="result-foot">※ 計算は一般的な目安です。持病・妊娠・授乳中は獣医師に相談してください。</p>' +
+    (state.breedMode === 'mix'
+      ? '<p class="result-foot">※ ミックス犬の成犬体重は、両親の体重レンジから推定した目安です。個体差が大きいため、実際に測った体重を優先してください。</p>'
+      : '');
 
   $('#copyBtn').addEventListener('click', function () { copySummary(c); });
   $('#printBtn').addEventListener('click', function () { window.print(); });
@@ -1947,13 +1953,14 @@ function buildPlanHTML(c, meta) {
     '<div class="plan-cell"><span>かかる期間</span><b>約' + weeksTxt(c.plan.weeksFast, c.plan.weeksSlow) + '</b></div>' +
     '<div class="plan-cell span2"><span>到達の目安</span><b>' + monthsTxt(c.plan.dateFast, c.plan.dateSlow) + '</b></div>' +
     '</div>' +
-    '<p class="plan-note" style="margin-top:10px">体重の1〜2%を1週間で変えるペースです。' + (loss ? '減量中は目標体重の安静時カロリー（RER）を目安に。' : '増量中は目標体重の維持カロリーの15%増を目安に。') + '途中で体重を測り、ペースを調整してください。</p>' +
+    '<p class="plan-note" style="margin-top:10px">体重の1〜2%を1週間で変えるペース（目安）です。' + (loss ? '減量中は目標体重の安静時カロリー（RER）を目安に。' : '増量中は目標体重の維持カロリーの15%増を目安に。') + '途中で体重を測り、ペースを調整してください。</p>' +
     '</div>';
 }
 
 function detailsHTML(c) {
   const lines = [];
   lines.push('犬種：' + currentBreedLabel() + (state.breedMode === 'mix' ? '（ミックス犬）' : ''));
+  if (state.breedMode === 'mix') lines.push('ミックス犬の体重目安：両親の成犬体重レンジの平均から推定（個体差大）');
   lines.push('現在体重 ' + kg(c.w) + 'kg のRER：' + fmtInt(c.rerCurrent) + ' kcal');
   if (c.full) {
     let factorTxt = 'RER × ' + c.factor.toFixed(2);
@@ -2139,7 +2146,7 @@ function updateHints(c) {
     const range = mixAdultRange(breedById(state.mixA), breedById(state.mixB));
     if (range) {
       const txt = range.min === range.max ? '約' + kg(range.min) + 'kg' : '約' + kg(range.min) + '〜' + kg(range.max) + 'kg';
-      hint.textContent = 'ミックス犬の推定成犬体重：' + txt + '（' + currentBreedLabel() + '・個体差大）';
+      hint.textContent = 'ミックス犬の成犬体重の目安（推定）：' + txt + '（' + currentBreedLabel() + '／個体差大）';
     } else {
       hint.textContent = 'ミックス犬は体重からサイズ（超小型〜大型）を判定して計算します';
     }
