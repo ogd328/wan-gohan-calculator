@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>わんごはん計算機｜愛犬の体重管理とフード・おやつ量</title>
-<meta name="description" content="愛犬の犬種・現在体重・目標体重から、1日にあげていいフードとおやつの量を計算。手持ちのフードのカロリーがわからないときは、犬種に合った代表的なフード候補も表示します。体重の記録グラフつき。">
+<meta name="description" content="愛犬の犬種（純血種・ミックス犬）・現在体重・目標体重から、1日にあげていいフードとおやつの量を計算。手持ちのフードのカロリーがわからないときは、犬種に合った代表的なフード候補（32商品）も表示します。体重の記録グラフつき。">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%90%B6%3C/text%3E%3C/svg%3E">
 <style>
 /* ============================================================
@@ -171,6 +171,13 @@ select:disabled{opacity:.6;cursor:not-allowed}
 .mode-row{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
 .mode-title{font-size:13px;font-weight:800;color:#6b5446}
 .mode-note{margin:2px 0 0;font-size:12px;color:var(--ink-mute);max-width:540px;line-height:1.6}
+
+/* mix breed */
+.field > .seg{align-self:flex-start}
+.mix-row{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;margin-top:8px}
+.mix-field{flex:1 1 140px;min-width:0;display:flex;flex-direction:column;gap:4px}
+.mix-label{font-size:10.5px;font-weight:700;color:var(--ink-mute)}
+.mix-x{font-weight:800;color:var(--accent);padding-bottom:13px;font-size:13px}
 
 /* ============================================================
    food selection / candidates
@@ -422,6 +429,7 @@ details.acc[open] summary::after{transform:rotate(180deg)}
       <p class="lead">愛犬の体重と目標、手持ちのフードとおやつから、<br class="pc-only">1日にあげていい量をサッと計算。</p>
       <ul class="hero-chips">
         <li>🐶 犬種からフード候補</li>
+        <li>🐕 純血種・ミックス犬対応</li>
         <li>⚖️ 減量・増量ペース</li>
         <li>🍖 おやつ10%ルール</li>
       </ul>
@@ -456,14 +464,29 @@ details.acc[open] summary::after{transform:rotate(180deg)}
           <span class="step">1</span>
           <div>
             <h2>愛犬のこと</h2>
-            <p class="card-sub">犬種と体重を入れるだけでOK</p>
+            <p class="card-sub">純血種もミックス犬もOK。体重を入れるだけで計算します</p>
           </div>
         </div>
 
         <div class="grid2">
           <div class="field span2">
-            <label for="breed">犬種</label>
-            <select id="breed"></select>
+            <label>犬種</label>
+            <div class="seg small" id="breedModeSeg" role="group" aria-label="犬種タイプ" style="margin-bottom:8px">
+              <button type="button" id="breedPure" class="seg-btn is-active" aria-pressed="true">純血種</button>
+              <button type="button" id="breedMix" class="seg-btn" aria-pressed="false">ミックス犬</button>
+            </div>
+            <select id="breed" aria-label="犬種"></select>
+            <div class="mix-row is-hidden" id="mixFields">
+              <div class="mix-field">
+                <span class="mix-label">犬種A</span>
+                <select id="mixA" aria-label="ミックス犬の犬種A"></select>
+              </div>
+              <span class="mix-x" aria-hidden="true">×</span>
+              <div class="mix-field">
+                <span class="mix-label">犬種B</span>
+                <select id="mixB" aria-label="ミックス犬の犬種B"></select>
+              </div>
+            </div>
             <p class="hint" id="breedHint"></p>
           </div>
 
@@ -720,6 +743,29 @@ function addDays(date, days) {
   const d = new Date(date.getTime());
   d.setDate(d.getDate() + days);
   return d;
+}
+
+/* 体重からサイズ区分を判定 */
+function sizeFromWeight(weightKg) {
+  const w = safeNum(weightKg, 0);
+  if (!(w > 0)) return '小型犬';
+  if (w < 4) return '超小型犬';
+  if (w < 10) return '小型犬';
+  if (w < 25) return '中型犬';
+  return '大型犬';
+}
+
+/* 2犬種の成犬体重レンジから、ミックス犬の推定レンジを計算（平均） */
+function mixAdultRange(a, b) {
+  function valid(x) {
+    return x && Number.isFinite(x.min) && Number.isFinite(x.max) && x.min > 0 && x.max >= x.min;
+  }
+  const av = valid(a);
+  const bv = valid(b);
+  if (!av && !bv) return null;
+  if (av && !bv) return { min: a.min, max: a.max };
+  if (!av && bv) return { min: b.min, max: b.max };
+  return { min: round((a.min + b.min) / 2, 1), max: round((a.max + b.max) / 2, 1) };
 }
 
 /* 維持カロリーの係数（しっかりモード） */
@@ -1342,6 +1388,61 @@ const RAW_FOODS = [
     "diet": false,
     "confidence": "low",
     "source": "https://ikupet.com/petfood/lineup/pfdnm/"
+  },
+  {
+    "id": "food-28",
+    "brand": "プロマネージ",
+    "product": "12ヶ月までの子犬用（パピー）",
+    "kcal_per_100g": 395,
+    "size": "全犬種",
+    "life_stage": "子犬",
+    "diet": false,
+    "confidence": "high",
+    "source": "https://promanage-pet.jp/core-products/puppy.html"
+  },
+  {
+    "id": "food-29",
+    "brand": "プロマネージ",
+    "product": "室内犬用",
+    "kcal_per_100g": 375,
+    "size": "全犬種",
+    "life_stage": "成犬",
+    "diet": false,
+    "confidence": "high",
+    "source": "https://promanage-pet.jp/core-products/house.html"
+  },
+  {
+    "id": "food-30",
+    "brand": "プロマネージ",
+    "product": "減量したい犬用",
+    "kcal_per_100g": 305,
+    "size": "全犬種",
+    "life_stage": "成犬",
+    "diet": true,
+    "confidence": "high",
+    "source": "https://promanage-pet.jp/core-products/weightcare.html"
+  },
+  {
+    "id": "food-31",
+    "brand": "プロマネージ",
+    "product": "避妊・去勢している犬用",
+    "kcal_per_100g": 340,
+    "size": "全犬種",
+    "life_stage": "成犬",
+    "diet": false,
+    "confidence": "high",
+    "source": "https://promanage-pet.jp/core-products/neuterd.html"
+  },
+  {
+    "id": "food-32",
+    "brand": "プロマネージ",
+    "product": "7歳からの室内犬用",
+    "kcal_per_100g": 360,
+    "size": "全犬種",
+    "life_stage": "高齢犬",
+    "diet": false,
+    "confidence": "high",
+    "source": "https://promanage-pet.jp/core-products/senior-house.html"
   }
 ];
 
@@ -1391,7 +1492,10 @@ const LS_LOG = 'wan-log-v1';
 
 const state = {
   mode: 'full',
+  breedMode: 'pure',
   breed: 'toypoodle',
+  mixA: 'chihuahua',
+  mixB: 'toypoodle',
   age: 'adult',
   neutered: 'yes',
   activity: 'normal',
@@ -1410,8 +1514,7 @@ const state = {
 let lastFilterKey = null;
 
 /* ===================== setup ===================== */
-function populateBreeds() {
-  const sel = $('#breed');
+function breedOptionsHTML() {
   const groups = {};
   SIZE_ORDER.forEach(function (s) { groups[s] = []; });
   const others = [];
@@ -1435,14 +1538,35 @@ function populateBreeds() {
     });
     html += '</optgroup>';
   }
-  sel.innerHTML = html;
+  return html;
+}
+
+function populateBreeds() {
+  const html = breedOptionsHTML();
+  ['#breed', '#mixA', '#mixB'].forEach(function (sel) {
+    $(sel).innerHTML = html;
+  });
+}
+
+function breedById(id) {
+  return BREEDS.filter(function (b) { return b.id === id; })[0] || null;
+}
+
+function currentBreedLabel() {
+  if (state.breedMode === 'mix') {
+    const a = breedById(state.mixA);
+    const b = breedById(state.mixB);
+    return (a ? a.name : '不明') + ' × ' + (b ? b.name : '不明');
+  }
+  const b = breedById(state.breed);
+  return b ? b.name : '';
 }
 
 function restoreState() {
   let saved = null;
   try { saved = JSON.parse(localStorage.getItem(LS_INPUT) || 'null'); } catch (e) { saved = null; }
   if (saved && typeof saved === 'object') {
-    ['mode', 'breed', 'age', 'neutered', 'activity', 'treatMode'].forEach(function (k) {
+    ['mode', 'breedMode', 'breed', 'mixA', 'mixB', 'age', 'neutered', 'activity', 'treatMode'].forEach(function (k) {
       if (typeof saved[k] === 'string') state[k] = saved[k];
     });
     ['weight', 'target', 'treatKcalPiece', 'treatKcal100', 'treatPieceG', 'foodKcal', 'bag'].forEach(function (k) {
@@ -1456,7 +1580,12 @@ function restoreState() {
   } catch (e) { state.log = []; }
 
   if (!$('#breed').querySelector('option[value="' + state.breed + '"]')) state.breed = 'toypoodle';
+  if (state.breedMode !== 'mix') state.breedMode = 'pure';
+  if (!$('#mixA').querySelector('option[value="' + state.mixA + '"]')) state.mixA = 'chihuahua';
+  if (!$('#mixB').querySelector('option[value="' + state.mixB + '"]')) state.mixB = 'toypoodle';
   $('#breed').value = state.breed;
+  $('#mixA').value = state.mixA;
+  $('#mixB').value = state.mixB;
   $('#age').value = state.age;
   $('#neuter').value = state.neutered;
   $('#activity').value = state.activity;
@@ -1469,12 +1598,14 @@ function restoreState() {
   $('#treatPieceG').value = state.treatPieceG;
   applyModeClasses();
   applyTreatModeClasses();
+  applyBreedModeClasses();
   $('#logDate').value = todayISO();
 }
 
 function saveState() {
   const data = {
-    mode: state.mode, breed: state.breed, age: state.age, neutered: state.neutered,
+    mode: state.mode, breedMode: state.breedMode, breed: state.breed, mixA: state.mixA, mixB: state.mixB,
+    age: state.age, neutered: state.neutered,
     activity: state.activity, weight: state.weight, target: state.target,
     treatMode: state.treatMode, treatKcalPiece: state.treatKcalPiece,
     treatKcal100: state.treatKcal100, treatPieceG: state.treatPieceG,
@@ -1489,6 +1620,8 @@ function saveLog() {
 /* ===================== form reading ===================== */
 function readForm() {
   state.breed = $('#breed').value;
+  state.mixA = $('#mixA').value;
+  state.mixB = $('#mixB').value;
   state.age = $('#age').value;
   state.neutered = $('#neuter').value;
   state.activity = $('#activity').value;
@@ -1504,16 +1637,27 @@ function readForm() {
 }
 
 function resolveSize() {
-  const breed = BREEDS.filter(function (b) { return b.id === state.breed; })[0];
-  if (breed && breed.size) return breed.size;
-  const w = safeNum(state.weight, 0);
-  if (w > 0) {
-    if (w < 4) return '超小型犬';
-    if (w < 10) return '小型犬';
-    if (w < 25) return '中型犬';
-    return '大型犬';
+  if (state.breedMode === 'mix') {
+    const range = mixAdultRange(breedById(state.mixA), breedById(state.mixB));
+    if (range) return sizeFromWeight((range.min + range.max) / 2);
+    return sizeFromWeight(state.weight);
   }
-  return '小型犬';
+  const breed = breedById(state.breed);
+  if (breed && breed.size) return breed.size;
+  return sizeFromWeight(state.weight);
+}
+
+/* フード候補の絞り込みに使うサイズ（ミックスは両親のサイズの和集合） */
+function resolveDogSizes() {
+  if (state.breedMode === 'mix') {
+    const sizes = [];
+    [state.mixA, state.mixB].forEach(function (id) {
+      const b = breedById(id);
+      if (b && b.size && sizes.indexOf(b.size) === -1) sizes.push(b.size);
+    });
+    if (sizes.length) return sizes;
+  }
+  return [resolveSize()];
 }
 
 function currentStage() {
@@ -1534,6 +1678,16 @@ function applyModeClasses() {
   $('#ageSimpleHint').classList.toggle('is-hidden', !simple);
 }
 
+function applyBreedModeClasses() {
+  const mix = state.breedMode === 'mix';
+  $('#breedPure').classList.toggle('is-active', !mix);
+  $('#breedMix').classList.toggle('is-active', mix);
+  $('#breedPure').setAttribute('aria-pressed', String(!mix));
+  $('#breedMix').setAttribute('aria-pressed', String(mix));
+  $('#breed').classList.toggle('is-hidden', mix);
+  $('#mixFields').classList.toggle('is-hidden', !mix);
+}
+
 function applyTreatModeClasses() {
   const perPiece = state.treatMode !== 'per100';
   $('#treatPieceField').classList.toggle('is-hidden', !perPiece);
@@ -1552,18 +1706,16 @@ function sizeMatches(foodSize, dogSize) {
 }
 
 function filteredFoods() {
-  const size = resolveSize();
+  const sizes = resolveDogSizes();
   const stage = currentStage();
   const showAll = $('#showAllFoods').checked;
   if (showAll) return FOODS.slice();
+  function fits(f) { return sizes.some(function (s) { return sizeMatches(f.size, s); }); }
   let list = FOODS.filter(function (f) {
-    const sizeOk = sizeMatches(f.size, size);
     const stageOk = f.life_stage === 'オールステージ' || f.life_stage === stage;
-    return sizeOk && stageOk;
+    return fits(f) && stageOk;
   });
-  if (!list.length) {
-    list = FOODS.filter(function (f) { return sizeMatches(f.size, size); });
-  }
+  if (!list.length) list = FOODS.filter(fits);
   if (!list.length) list = FOODS.slice();
   return list;
 }
@@ -1608,14 +1760,15 @@ function updateFoodLabel() {
 }
 
 function pickCandidates(status) {
-  const size = resolveSize();
+  const sizes = resolveDogSizes();
   const stage = currentStage();
+  function fits(f) { return sizes.some(function (s) { return sizeMatches(f.size, s); }); }
   let pool = FOODS.filter(function (f) {
-    return sizeMatches(f.size, size) && (f.life_stage === 'オールステージ' || f.life_stage === stage);
+    return fits(f) && (f.life_stage === 'オールステージ' || f.life_stage === stage);
   });
   if (pool.length < 4) {
     const extra = FOODS.filter(function (f) {
-      return pool.indexOf(f) === -1 && sizeMatches(f.size, size);
+      return pool.indexOf(f) === -1 && fits(f);
     });
     pool = pool.concat(extra);
   }
@@ -1623,8 +1776,8 @@ function pickCandidates(status) {
 
   function score(f) {
     let s = 0;
-    if (f.size === size) s += 2;
-    else if (sizeMatches(f.size, size)) s += 1;
+    if (sizes.indexOf(f.size) !== -1) s += 2;
+    else if (sizes.some(function (x) { return sizeMatches(f.size, x); })) s += 1;
     if (f.life_stage === stage) s += 2;
     if (status === 'loss' && f.diet) s += 1;
     if (status !== 'loss' && f.diet) s -= 1;
@@ -1800,6 +1953,7 @@ function buildPlanHTML(c, meta) {
 
 function detailsHTML(c) {
   const lines = [];
+  lines.push('犬種：' + currentBreedLabel() + (state.breedMode === 'mix' ? '（ミックス犬）' : ''));
   lines.push('現在体重 ' + kg(c.w) + 'kg のRER：' + fmtInt(c.rerCurrent) + ' kcal');
   if (c.full) {
     let factorTxt = 'RER × ' + c.factor.toFixed(2);
@@ -1832,6 +1986,7 @@ function summaryText(c) {
   const meta = statusMeta(c.status);
   const lines = [];
   lines.push('【わんごはん計算機】');
+  lines.push('犬種：' + currentBreedLabel() + (state.breedMode === 'mix' ? '（ミックス犬）' : ''));
   lines.push('1日にあげていいカロリー：' + fmtInt(c.allowance) + ' kcal（' + meta.label + '）');
   lines.push('うちおやつ：' + fmtInt(c.treatLimit) + ' kcal（10%）まで＝' + (c.pieces === null ? '—' : c.pieces + '個'));
   lines.push('フード（おやつ上限まで）：' + (c.foodGrams === null ? '—' : fmtInt(c.foodGrams) + ' g/日'));
@@ -1979,16 +2134,26 @@ function addLogEntry() {
 
 /* ===================== hints ===================== */
 function updateHints(c) {
-  const breed = BREEDS.filter(function (b) { return b.id === state.breed; })[0];
   const hint = $('#breedHint');
-  if (breed && breed.min) {
-    if (breed.min === breed.max) {
-      hint.textContent = '成犬の体重目安：約' + breed.min + 'kg（個体差あり・' + breed.size + '）';
+  if (state.breedMode === 'mix') {
+    const range = mixAdultRange(breedById(state.mixA), breedById(state.mixB));
+    if (range) {
+      const txt = range.min === range.max ? '約' + kg(range.min) + 'kg' : '約' + kg(range.min) + '〜' + kg(range.max) + 'kg';
+      hint.textContent = 'ミックス犬の推定成犬体重：' + txt + '（' + currentBreedLabel() + '・個体差大）';
     } else {
-      hint.textContent = '成犬の体重目安：約' + breed.min + '〜' + breed.max + 'kg（' + breed.size + '）';
+      hint.textContent = 'ミックス犬は体重からサイズ（超小型〜大型）を判定して計算します';
     }
   } else {
-    hint.textContent = '体重からサイズ（超小型〜大型）を判定して計算します';
+    const breed = breedById(state.breed);
+    if (breed && breed.min) {
+      if (breed.min === breed.max) {
+        hint.textContent = '成犬の体重目安：約' + breed.min + 'kg（個体差あり・' + breed.size + '）';
+      } else {
+        hint.textContent = '成犬の体重目安：約' + breed.min + '〜' + breed.max + 'kg（' + breed.size + '）';
+      }
+    } else {
+      hint.textContent = '体重からサイズ（超小型〜大型）を判定して計算します';
+    }
   }
 
   const th = $('#targetHint');
@@ -2023,13 +2188,23 @@ function update(changed) {
   readForm();
   applyModeClasses();
   applyTreatModeClasses();
+  applyBreedModeClasses();
   updateTreatEffective();
 
   const size = resolveSize();
   state.size = size;
-  const filterKey = size + '|' + state.age + '|' + $('#showAllFoods').checked;
+  const filterKey = state.breedMode + '|' + state.breed + '|' + state.mixA + '|' + state.mixB + '|' +
+    size + '|' + state.age + '|' + $('#showAllFoods').checked;
 
-  const breedInfo = BREEDS.filter(function (b) { return b.id === state.breed; })[0] || null;
+  let breedInfo = null;
+  if (state.breedMode === 'mix') {
+    const range = mixAdultRange(breedById(state.mixA), breedById(state.mixB));
+    breedInfo = range
+      ? { name: currentBreedLabel() + '（ミックス犬）', min: range.min, max: range.max }
+      : { name: currentBreedLabel() + '（ミックス犬）', min: null, max: null };
+  } else {
+    breedInfo = breedById(state.breed);
+  }
   const calc = compute({
     mode: state.mode,
     age: state.age,
@@ -2068,6 +2243,17 @@ function bindEvents() {
     state.mode = 'full';
     update('mode');
   });
+
+  $('#breedPure').addEventListener('click', function () {
+    state.breedMode = 'pure';
+    update('breedMode');
+  });
+  $('#breedMix').addEventListener('click', function () {
+    state.breedMode = 'mix';
+    update('breedMode');
+  });
+  $('#mixA').addEventListener('change', function () { update('mix'); });
+  $('#mixB').addEventListener('change', function () { update('mix'); });
 
   $('#breed').addEventListener('change', function () { update('breed'); });
   $('#age').addEventListener('change', function () { update('age'); });
