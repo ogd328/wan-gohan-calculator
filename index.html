@@ -307,6 +307,46 @@ details.acc[open] summary::after{transform:rotate(180deg)}
 .tip-card li::marker{color:var(--accent);font-weight:800}
 
 /* ============================================================
+   treats
+   ============================================================ */
+.treat-list{display:flex;flex-direction:column;gap:10px}
+.treat-row{border:1px solid #f1e3d6;border-radius:14px;padding:12px;background:#fffdfa}
+.treat-head{display:flex;gap:8px;align-items:center}
+.treat-name{
+  flex:1;min-width:0;height:38px;border:1.5px solid #eadbcd;border-radius:10px;
+  padding:0 11px;font-size:13px;font-weight:600;background:#fff;color:var(--ink);
+}
+.treat-name::placeholder{color:#c9b8aa;font-weight:500}
+.treat-name:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(239,125,62,.13)}
+.treat-del{
+  flex:none;width:30px;height:30px;border:0;border-radius:9px;background:#f7ece1;
+  color:#b08c72;font-size:15px;font-weight:700;cursor:pointer;line-height:1;
+}
+.treat-del:hover{background:#f6ddcc;color:#b5633a}
+.treat-controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px}
+.treat-mode-select{
+  width:auto;height:36px;font-size:12px;padding:0 32px 0 10px;
+  border-radius:10px;background-color:#fff;
+}
+.treat-cal-fields{display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:11.5px;color:var(--ink-mute);font-weight:600}
+.treat-num{display:inline-flex;align-items:center;gap:3px}
+.treat-num input[type=number]{
+  width:82px;height:36px;border:1.5px solid #eadbcd;border-radius:10px;
+  padding:0 8px;font-size:13px;font-weight:600;background:#fff;color:var(--ink);
+  font-variant-numeric:tabular-nums;
+}
+.treat-num input[type=number]:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(239,125,62,.13)}
+.treat-x{color:#b8a494;font-weight:700}
+.treat-result{margin:8px 0 0;font-size:12px;color:#7a6558;line-height:1.55}
+.treat-result b{color:var(--accent-deep);font-size:14px}
+.treat-result.is-over{color:#b5633a;font-weight:700}
+.add-treat{width:100%;margin-top:10px;padding:9px;font-size:12px}
+@media (max-width:600px){
+  .treat-num input[type=number]{width:72px}
+  .treat-mode-select{font-size:11px}
+}
+
+/* ============================================================
    weight log
    ============================================================ */
 .log-form{display:grid;grid-template-columns:1.1fr 1fr auto;gap:8px;align-items:stretch}
@@ -592,45 +632,15 @@ details.acc[open] summary::after{transform:rotate(180deg)}
         <div class="card-head">
           <span class="step">3</span>
           <div>
-            <h2>おやつ</h2>
-            <p class="card-sub">おやつは1日のカロリーの10%以内が目安</p>
+            <h2>手持ちのおやつ</h2>
+            <p class="card-sub">種類ごとに「何個まであげていいか」を計算します（1日の10%以内）</p>
           </div>
         </div>
 
-        <div class="seg small" role="group" aria-label="おやつのカロリー入力方法" style="margin-bottom:14px">
-          <button type="button" id="treatPerPiece" class="seg-btn is-active" aria-pressed="true">1個あたりkcal</button>
-          <button type="button" id="treatPer100" class="seg-btn" aria-pressed="false">100gあたりkcal</button>
-        </div>
+        <div class="treat-list" id="treatList"></div>
+        <button type="button" class="btn btn-ghost add-treat" id="addTreat">＋ おやつを追加</button>
 
-        <div class="grid2" id="treatPieceField">
-          <div class="field span2">
-            <label for="treatPieceKcal">おやつ1個のカロリー</label>
-            <div class="input-wrap">
-              <input type="number" id="treatPieceKcal" inputmode="numeric" step="1" min="0" max="500" value="10">
-              <span class="unit">kcal</span>
-            </div>
-            <p class="hint">例: 小さめのジャーキー1本 約10kcal</p>
-          </div>
-        </div>
-
-        <div class="grid2 is-hidden" id="treat100Fields">
-          <div class="field">
-            <label for="treat100Kcal">カロリー（100gあたり）</label>
-            <div class="input-wrap">
-              <input type="number" id="treat100Kcal" inputmode="numeric" step="1" min="0" max="900" value="350">
-              <span class="unit">kcal</span>
-            </div>
-          </div>
-          <div class="field">
-            <label for="treatPieceG">1個あたりの重さ</label>
-            <div class="input-wrap">
-              <input type="number" id="treatPieceG" inputmode="decimal" step="0.5" min="0" max="500" value="5">
-              <span class="unit">g</span>
-            </div>
-          </div>
-        </div>
-
-        <p class="mini-note" id="treatEffective"></p>
+        <p class="mini-note" id="treatBudgetNote"></p>
       </section>
 
       <section class="card" id="logCard">
@@ -674,7 +684,7 @@ details.acc[open] summary::after{transform:rotate(180deg)}
         <ol>
           <li>犬種・現在の体重・目標体重を入力</li>
           <li>手持ちのフードを選ぶ（わからなければ候補から）</li>
-          <li>おやつのカロリーを入力</li>
+          <li>おやつを追加して、種類ごとのカロリーを入力</li>
           <li>計算結果をチェック！</li>
         </ol>
         <p class="hint" style="margin-top:10px">「かんたん」と「しっかり」はいつでも切り替えられます。迷ったら「しっかり」がおすすめ。</p>
@@ -810,18 +820,28 @@ function compute(s) {
   }
 
   const treatLimit = allowance * 0.1;
-  let perPiece;
-  if (s.treatMode === 'per100') {
-    perPiece = safeNum(s.treatKcal100) * safeNum(s.treatPieceG) / 100;
-  } else {
-    perPiece = safeNum(s.treatKcalPiece);
+  let treatList = Array.isArray(s.treats) && s.treats.length ? s.treats : null;
+  if (!treatList) {
+    treatList = [{ mode: s.treatMode, kcalPiece: s.treatKcalPiece, kcal100: s.treatKcal100, gramPiece: s.treatPieceG }];
   }
-  const pieces = perPiece > 0 ? Math.floor((treatLimit + 1e-9) / perPiece) : null;
-  const treatKcalUsed = pieces !== null ? pieces * perPiece : 0;
+  const treatResults = treatList.map(function (t) {
+    const pp = t.mode === 'per100'
+      ? safeNum(t.kcal100) * safeNum(t.gramPiece) / 100
+      : safeNum(t.kcalPiece);
+    const n = pp > 0 ? Math.floor((treatLimit + 1e-9) / pp) : null;
+    return { perPiece: pp, pieces: n, kcal: n !== null ? n * pp : 0 };
+  });
+  const firstTreat = treatResults[0] || { perPiece: 0, pieces: null, kcal: 0 };
+  const perPiece = firstTreat.perPiece;
+  const pieces = firstTreat.pieces;
+  const treatKcalUsed = firstTreat.kcal;
+  const hasTreat = treatResults.some(function (r) { return r.perPiece > 0; });
+  // 1種類のときは実際の最大個数分、複数種類のときはおやつ予算（10%）を差し引く
+  const treatBudget = hasTreat ? (treatResults.length === 1 ? treatKcalUsed : treatLimit) : 0;
 
   const foodKcal = safeNum(s.foodKcal);
   const perGram = foodKcal / 100;
-  const foodGrams = perGram > 0 ? Math.floor((allowance - treatKcalUsed) / perGram + 1e-9) : null;
+  const foodGrams = perGram > 0 ? Math.floor((allowance - treatBudget) / perGram + 1e-9) : null;
   const foodGramsNoTreat = perGram > 0 ? Math.floor(allowance / perGram + 1e-9) : null;
   const perMeal = foodGrams !== null ? round(foodGrams / 2, 0) : null;
 
@@ -867,8 +887,9 @@ function compute(s) {
   if (foodKcal > 0 && (foodKcal < 250 || foodKcal > 500)) {
     out.warnings.push('フードのカロリーが一般的なドライフードの範囲（約300〜450kcal/100g）から外れています。パッケージの数値を確認してください。');
   }
-  if (pieces === 0) {
-    out.warnings.push('おやつ1個（' + round(perPiece, 1) + 'kcal）で1日の上限を超えてしまいます。小さく分けるか、低カロリーのおやつにしましょう。');
+  const zeroTreat = treatResults.filter(function (r) { return r.perPiece > 0 && r.pieces === 0; })[0];
+  if (zeroTreat) {
+    out.warnings.push('おやつ1個（' + round(zeroTreat.perPiece, 1) + 'kcal）で1日の上限を超えてしまいます。小さく分けるか、低カロリーのおやつにしましょう。');
   }
   if (foodGrams !== null && foodGrams < 15 && w > 1.5) {
     out.warnings.push('1日のフード量がかなり少なめです。フードのカロリー設定が正しいか確認してください。');
@@ -895,6 +916,8 @@ function compute(s) {
     activityMult: activityMult,
     allowance: allowance,
     treatLimit: treatLimit,
+    treatResults: treatResults,
+    treatBudget: treatBudget,
     perPiece: perPiece,
     pieces: pieces,
     treatKcalUsed: treatKcalUsed,
@@ -1502,10 +1525,7 @@ const state = {
   activity: 'normal',
   weight: 3.5,
   target: 3.0,
-  treatMode: 'perPiece',
-  treatKcalPiece: 10,
-  treatKcal100: 350,
-  treatPieceG: 5,
+  treats: [newTreat()],
   foodId: '__manual',
   foodKcal: 360,
   bag: 0,
@@ -1567,13 +1587,32 @@ function restoreState() {
   let saved = null;
   try { saved = JSON.parse(localStorage.getItem(LS_INPUT) || 'null'); } catch (e) { saved = null; }
   if (saved && typeof saved === 'object') {
-    ['mode', 'breedMode', 'breed', 'mixA', 'mixB', 'age', 'neutered', 'activity', 'treatMode'].forEach(function (k) {
+    ['mode', 'breedMode', 'breed', 'mixA', 'mixB', 'age', 'neutered', 'activity'].forEach(function (k) {
       if (typeof saved[k] === 'string') state[k] = saved[k];
     });
-    ['weight', 'target', 'treatKcalPiece', 'treatKcal100', 'treatPieceG', 'foodKcal', 'bag'].forEach(function (k) {
+    ['weight', 'target', 'foodKcal', 'bag'].forEach(function (k) {
       if (Number.isFinite(saved[k])) state[k] = saved[k];
     });
     if (typeof saved.foodId === 'string') state.foodId = saved.foodId;
+    if (Array.isArray(saved.treats) && saved.treats.length) {
+      state.treats = saved.treats.filter(function (t) { return t && typeof t.id === 'string'; }).map(function (t) {
+        return {
+          id: t.id,
+          name: typeof t.name === 'string' ? t.name : '',
+          mode: t.mode === 'per100' ? 'per100' : 'piece',
+          kcalPiece: Number.isFinite(t.kcalPiece) ? t.kcalPiece : 10,
+          kcal100: Number.isFinite(t.kcal100) ? t.kcal100 : 350,
+          gramPiece: Number.isFinite(t.gramPiece) ? t.gramPiece : 5
+        };
+      });
+    } else {
+      const legacy = newTreat();
+      legacy.mode = saved.treatMode === 'per100' ? 'per100' : 'piece';
+      if (Number.isFinite(saved.treatKcalPiece)) legacy.kcalPiece = saved.treatKcalPiece;
+      if (Number.isFinite(saved.treatKcal100)) legacy.kcal100 = saved.treatKcal100;
+      if (Number.isFinite(saved.treatPieceG)) legacy.gramPiece = saved.treatPieceG;
+      state.treats = [legacy];
+    }
   }
   try {
     const log = JSON.parse(localStorage.getItem(LS_LOG) || '[]');
@@ -1594,11 +1633,7 @@ function restoreState() {
   $('#target').value = kg(state.target);
   $('#foodKcal').value = state.foodKcal;
   $('#bagRemaining').value = state.bag > 0 ? state.bag : '';
-  $('#treatPieceKcal').value = state.treatKcalPiece;
-  $('#treat100Kcal').value = state.treatKcal100;
-  $('#treatPieceG').value = state.treatPieceG;
   applyModeClasses();
-  applyTreatModeClasses();
   applyBreedModeClasses();
   $('#logDate').value = todayISO();
 }
@@ -1608,8 +1643,7 @@ function saveState() {
     mode: state.mode, breedMode: state.breedMode, breed: state.breed, mixA: state.mixA, mixB: state.mixB,
     age: state.age, neutered: state.neutered,
     activity: state.activity, weight: state.weight, target: state.target,
-    treatMode: state.treatMode, treatKcalPiece: state.treatKcalPiece,
-    treatKcal100: state.treatKcal100, treatPieceG: state.treatPieceG,
+    treats: state.treats,
     foodId: state.foodId, foodKcal: state.foodKcal, bag: state.bag
   };
   try { localStorage.setItem(LS_INPUT, JSON.stringify(data)); } catch (e) {}
@@ -1628,9 +1662,6 @@ function readForm() {
   state.activity = $('#activity').value;
   state.weight = parseFloat($('#weight').value);
   state.target = parseFloat($('#target').value);
-  state.treatKcalPiece = parseFloat($('#treatPieceKcal').value);
-  state.treatKcal100 = parseFloat($('#treat100Kcal').value);
-  state.treatPieceG = parseFloat($('#treatPieceG').value);
   state.foodId = $('#foodSelect').value || state.foodId || '__manual';
   state.foodKcal = parseFloat($('#foodKcal').value);
   state.bag = parseFloat($('#bagRemaining').value) || 0;
@@ -1689,17 +1720,96 @@ function applyBreedModeClasses() {
   $('#mixFields').classList.toggle('is-hidden', !mix);
 }
 
-function applyTreatModeClasses() {
-  const perPiece = state.treatMode !== 'per100';
-  $('#treatPieceField').classList.toggle('is-hidden', !perPiece);
-  $('#treat100Fields').classList.toggle('is-hidden', perPiece);
-  $('#treatPerPiece').classList.toggle('is-active', perPiece);
-  $('#treatPer100').classList.toggle('is-active', !perPiece);
-  $('#treatPerPiece').setAttribute('aria-pressed', String(perPiece));
-  $('#treatPer100').setAttribute('aria-pressed', String(!perPiece));
+/* ===================== treats UI ===================== */
+function newTreat() {
+  return {
+    id: 't' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+    name: '',
+    mode: 'piece',
+    kcalPiece: 10,
+    kcal100: 350,
+    gramPiece: 5
+  };
 }
 
-/* ===================== food options ===================== */
+function treatPerPiece(t) {
+  return t.mode === 'per100'
+    ? safeNum(t.kcal100) * safeNum(t.gramPiece) / 100
+    : safeNum(t.kcalPiece);
+}
+
+function treatLabel(t, i) {
+  const nm = (t && typeof t.name === 'string') ? t.name.trim() : '';
+  return nm || ('おやつ' + (i + 1));
+}
+
+function treatNumHTML(field, value, unit, step) {
+  return '<span class="treat-num"><input type="number" data-field="' + field +
+    '" inputmode="decimal" step="' + step + '" min="0" max="900" value="' + Number(value) +
+    '"><span>' + unit + '</span></span>';
+}
+
+function renderTreatRows() {
+  const list = $('#treatList');
+  if (!list) return;
+  list.innerHTML = state.treats.map(function (t, i) {
+    const per = treatPerPiece(t);
+    return '<div class="treat-row" data-treat-id="' + esc(t.id) + '">' +
+      '<div class="treat-head">' +
+        '<input type="text" class="treat-name" data-field="name" value="' + esc(t.name || '') + '" placeholder="おやつ名（任意） 例: ジャーキー" maxlength="30">' +
+        (state.treats.length > 1
+          ? '<button type="button" class="treat-del" data-action="del" aria-label="このおやつを削除">×</button>'
+          : '') +
+      '</div>' +
+      '<div class="treat-controls">' +
+        '<select class="treat-mode-select" data-field="mode" aria-label="カロリー入力方法">' +
+          '<option value="piece"' + (t.mode !== 'per100' ? ' selected' : '') + '>1個あたりkcal</option>' +
+          '<option value="per100"' + (t.mode === 'per100' ? ' selected' : '') + '>100gあたりkcal</option>' +
+        '</select>' +
+        '<div class="treat-cal-fields">' +
+          (t.mode === 'per100'
+            ? treatNumHTML('kcal100', t.kcal100, 'kcal/100g', 1) + '<span class="treat-x">×</span>' + treatNumHTML('gramPiece', t.gramPiece, 'g/個', 0.5)
+            : treatNumHTML('kcalPiece', t.kcalPiece, 'kcal/個', 1)) +
+        '</div>' +
+      '</div>' +
+      '<p class="treat-result" data-result-id="' + esc(t.id) + '">' +
+        (per > 0 ? '1個 約' + round(per, 1) + ' kcal' : 'カロリーを入力してください') +
+      '</p>' +
+    '</div>';
+  }).join('');
+}
+
+function renderTreatResults(c) {
+  const results = (c && c.treatResults) || [];
+  state.treats.forEach(function (t, i) {
+    const el = document.querySelector('[data-result-id="' + t.id + '"]');
+    if (!el) return;
+    const r = results[i];
+    if (!r || !(r.perPiece > 0)) {
+      el.textContent = 'カロリーを入力してください';
+      el.classList.remove('is-over');
+      return;
+    }
+    if (r.pieces === 0) {
+      el.innerHTML = '1個（約' + round(r.perPiece, 1) + ' kcal）でおやつ上限を超えます';
+      el.classList.add('is-over');
+      return;
+    }
+    el.innerHTML = '1個 約' + round(r.perPiece, 1) + ' kcal ／ このおやつだけなら <b>最大' + r.pieces + '個</b>（約' + fmtInt(r.pieces * r.perPiece) + ' kcal）';
+    el.classList.remove('is-over');
+  });
+
+  const note = $('#treatBudgetNote');
+  if (note) {
+    if (c && c.valid) {
+      note.innerHTML = 'おやつ上限は1日 <b>' + fmtInt(c.treatLimit) + ' kcal</b>（1日の10%）。複数種類あげるときは、合計がこの範囲内になるようにしてください。';
+    } else {
+      note.textContent = 'おやつは1日のカロリーの10%以内が目安です。';
+    }
+  }
+}
+
+/* ===================== food options ===================== *//* ===================== food options ===================== */
 function sizeMatches(foodSize, dogSize) {
   if (foodSize === '全犬種' || foodSize === dogSize) return true;
   if (dogSize === '超小型犬' && foodSize === '小型犬') return true;
@@ -1860,9 +1970,17 @@ function renderResult(c) {
   const kcal = Math.round(c.allowance);
   const treatLimit = Math.round(c.treatLimit);
 
-  let treatTxt;
-  if (c.pieces === null) treatTxt = 'カロリーを入力';
-  else treatTxt = c.pieces + '個まで' + (c.perPiece > 0 ? '（1個 ' + fmt(c.perPiece, 1) + 'kcal）' : '');
+  let treatRowsHTML = '';
+  (c.treatResults || []).forEach(function (r, i) {
+    if (!(r.perPiece > 0)) return;
+    const t = state.treats[i] || {};
+    const label = (typeof t.name === 'string' && t.name.trim()) ? t.name.trim() : ('おやつ' + (i + 1));
+    const val = r.pieces === 0
+      ? '1個で上限超え'
+      : r.pieces + '個まで（1個 ' + fmt(r.perPiece, 1) + 'kcal）';
+    treatRowsHTML += row('🐾 ' + esc(label), val);
+  });
+  if (!treatRowsHTML) treatRowsHTML = row('おやつ', 'カロリーを入力');
 
   const foodMain = c.foodGrams === null ? 'フードkcalを入力' : fmtInt(c.foodGrams) + ' g/日';
   const foodNoTreat = c.foodGramsNoTreat === null ? '—' : fmtInt(c.foodGramsNoTreat) + ' g/日';
@@ -1870,7 +1988,7 @@ function renderResult(c) {
 
   let rows = '';
   rows += row('フード（おやつ上限まで）', foodMain, true);
-  rows += row('おやつ', treatTxt);
+  rows += treatRowsHTML;
   rows += row('フード（おやつなし）', foodNoTreat);
   rows += row('1回あたり（1日2回）', perMeal);
   if (c.bagDays !== null) {
@@ -1909,6 +2027,9 @@ function renderResult(c) {
     '<button type="button" class="btn btn-ghost" id="printBtn">🖨 印刷・PDF保存</button>' +
     '</div>' +
     '<p class="result-foot">※ 計算は一般的な目安です。持病・妊娠・授乳中は獣医師に相談してください。</p>' +
+    (state.treats.length > 1
+      ? '<p class="result-foot">※ おやつを複数種類あげるときは、合計がおやつ上限（' + fmtInt(c.treatLimit) + 'kcal）以内になるようにしてください。</p>'
+      : '') +
     (state.breedMode === 'mix'
       ? '<p class="result-foot">※ ミックス犬の成犬体重は、両親の体重レンジから推定した目安です。個体差が大きいため、実際に測った体重を優先してください。</p>'
       : '');
@@ -1976,7 +2097,12 @@ function detailsHTML(c) {
   }
   lines.push('おやつ上限（10%）：' + fmtInt(c.treatLimit) + ' kcal');
   if (c.foodKcal > 0) lines.push('フード：' + fmtInt(c.foodKcal) + ' kcal/100g → 1日 ' + fmtInt(c.foodGrams) + ' g');
-  if (c.perPiece > 0) lines.push('おやつ1個：' + fmt(c.perPiece, 1) + ' kcal → 上限 ' + c.pieces + ' 個');
+  (c.treatResults || []).forEach(function (r, i) {
+    if (!(r.perPiece > 0)) return;
+    const t = state.treats[i] || {};
+    const nm = (typeof t.name === 'string' && t.name.trim()) ? t.name.trim() : ('おやつ' + (i + 1));
+    lines.push(nm + '：1個 ' + fmt(r.perPiece, 1) + ' kcal → 上限 ' + r.pieces + ' 個');
+  });
   if (c.bagDays !== null) lines.push('フード残り：' + fmtInt(c.bag) + ' g → 約' + c.bagDays + '日分');
 
   return '<details class="acc">' +
@@ -1995,7 +2121,13 @@ function summaryText(c) {
   lines.push('【わんごはん計算機】');
   lines.push('犬種：' + currentBreedLabel() + (state.breedMode === 'mix' ? '（ミックス犬）' : ''));
   lines.push('1日にあげていいカロリー：' + fmtInt(c.allowance) + ' kcal（' + meta.label + '）');
-  lines.push('うちおやつ：' + fmtInt(c.treatLimit) + ' kcal（10%）まで＝' + (c.pieces === null ? '—' : c.pieces + '個'));
+  lines.push('うちおやつ：' + fmtInt(c.treatLimit) + ' kcal（10%）まで');
+  (c.treatResults || []).forEach(function (r, i) {
+    if (!(r.perPiece > 0)) return;
+    const t = state.treats[i] || {};
+    const nm = (typeof t.name === 'string' && t.name.trim()) ? t.name.trim() : ('おやつ' + (i + 1));
+    lines.push(nm + '：' + (r.pieces === 0 ? '1個で上限超え' : r.pieces + '個まで（1個 ' + fmt(r.perPiece, 1) + 'kcal）'));
+  });
   lines.push('フード（おやつ上限まで）：' + (c.foodGrams === null ? '—' : fmtInt(c.foodGrams) + ' g/日'));
   lines.push('フード（おやつなし）：' + (c.foodGramsNoTreat === null ? '—' : fmtInt(c.foodGramsNoTreat) + ' g/日'));
   lines.push('1回あたり（1日2回）：' + (c.perMeal === null ? '—' : fmtInt(c.perMeal) + ' g'));
@@ -2178,25 +2310,11 @@ function updateHints(c) {
   }
 }
 
-function updateTreatEffective() {
-  const perPiece = state.treatMode === 'per100'
-    ? safeNum(state.treatKcal100) * safeNum(state.treatPieceG) / 100
-    : safeNum(state.treatKcalPiece);
-  const el = $('#treatEffective');
-  if (perPiece > 0) {
-    el.innerHTML = '1個あたり <b>約' + round(perPiece, 1) + 'kcal</b> として、あげていい個数を計算します。';
-  } else {
-    el.textContent = 'おやつのカロリーを入力すると、あげていい個数を計算します。';
-  }
-}
-
 /* ===================== update loop ===================== */
 function update(changed) {
   readForm();
   applyModeClasses();
-  applyTreatModeClasses();
   applyBreedModeClasses();
-  updateTreatEffective();
 
   const size = resolveSize();
   state.size = size;
@@ -2220,10 +2338,7 @@ function update(changed) {
     weight: state.weight,
     target: state.target,
     size: size,
-    treatMode: state.treatMode,
-    treatKcalPiece: state.treatKcalPiece,
-    treatKcal100: state.treatKcal100,
-    treatPieceG: state.treatPieceG,
+    treats: state.treats,
     foodKcal: state.foodKcal,
     bag: state.bag,
     breedInfo: breedInfo
@@ -2237,6 +2352,7 @@ function update(changed) {
   updateFoodLabel();
   renderResult(calc);
   updateHints(calc);
+  renderTreatResults(calc);
   saveState();
 }
 
@@ -2267,8 +2383,56 @@ function bindEvents() {
   $('#neuter').addEventListener('change', function () { update('neuter'); });
   $('#activity').addEventListener('change', function () { update('activity'); });
 
-  ['weight', 'target', 'foodKcal', 'bagRemaining', 'treatPieceKcal', 'treat100Kcal', 'treatPieceG'].forEach(function (id) {
+  ['weight', 'target', 'foodKcal', 'bagRemaining'].forEach(function (id) {
     $('#' + id).addEventListener('input', function () { update('input'); });
+  });
+
+  $('#addTreat').addEventListener('click', function () {
+    if (state.treats.length >= 8) {
+      toast('おやつは8種類まで登録できます');
+      return;
+    }
+    state.treats.push(newTreat());
+    renderTreatRows();
+    update('treatAdd');
+  });
+
+  $('#treatList').addEventListener('input', function (e) {
+    const field = e.target.getAttribute('data-field');
+    if (!field || field === 'mode') return;
+    const row = e.target.closest('.treat-row');
+    if (!row) return;
+    const t = state.treats.filter(function (x) { return x.id === row.getAttribute('data-treat-id'); })[0];
+    if (!t) return;
+    if (field === 'name') {
+      t.name = e.target.value;
+    } else {
+      const v = parseFloat(e.target.value);
+      t[field] = Number.isFinite(v) ? v : 0;
+    }
+    update('treatInput');
+  });
+
+  $('#treatList').addEventListener('change', function (e) {
+    if (e.target.getAttribute('data-field') !== 'mode') return;
+    const row = e.target.closest('.treat-row');
+    if (!row) return;
+    const t = state.treats.filter(function (x) { return x.id === row.getAttribute('data-treat-id'); })[0];
+    if (!t) return;
+    t.mode = e.target.value === 'per100' ? 'per100' : 'piece';
+    renderTreatRows();
+    update('treatMode');
+  });
+
+  $('#treatList').addEventListener('click', function (e) {
+    const btn = e.target.closest('[data-action="del"]');
+    if (!btn) return;
+    const row = btn.closest('.treat-row');
+    if (!row || state.treats.length <= 1) return;
+    const id = row.getAttribute('data-treat-id');
+    state.treats = state.treats.filter(function (t) { return t.id !== id; });
+    renderTreatRows();
+    update('treatDel');
   });
 
   $('#foodSelect').addEventListener('change', function () {
@@ -2285,15 +2449,6 @@ function bindEvents() {
   $('#showAllFoods').addEventListener('change', function () {
     lastFilterKey = null;
     update('foodFilter');
-  });
-
-  $('#treatPerPiece').addEventListener('click', function () {
-    state.treatMode = 'perPiece';
-    update('treat');
-  });
-  $('#treatPer100').addEventListener('click', function () {
-    state.treatMode = 'per100';
-    update('treat');
   });
 
   $('#candidates').addEventListener('click', function (e) {
@@ -2365,6 +2520,7 @@ function init() {
   $('#foodCount').textContent = FOODS.length;
   $('#dataMeta').textContent = 'データ更新：2026年11月（フード' + FOODS.length + '商品・犬種' + (BREEDS.length - 1) + '種）';
   restoreState();
+  renderTreatRows();
   bindEvents();
   update('init');
   renderLog();
