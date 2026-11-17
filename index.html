@@ -152,6 +152,12 @@ select:disabled{opacity:.6;cursor:not-allowed}
   border-radius:12px;padding:10px 12px;font-size:12px;color:#8a6a52;
 }
 .mini-note b{color:var(--accent-deep)}
+.basis-note{
+  font-size:10.5px;line-height:1.65;color:var(--ink-mute);
+  margin:12px 0 0;padding-top:9px;border-top:1px dashed var(--line);
+}
+.basis-note b{color:var(--ink-soft);font-weight:700}
+.basis-note a{color:var(--ink-soft);text-decoration:underline;text-underline-offset:2px}
 
 /* segmented control */
 .seg{display:inline-flex;background:#f7ede3;border-radius:12px;padding:4px;gap:4px}
@@ -577,6 +583,7 @@ details.acc[open] summary::after{transform:rotate(180deg)}
         </div>
 
         <div class="mini-note" id="targetHint"></div>
+        <p class="basis-note"><b>根拠：</b>必要カロリーは RER（安静時エネルギー要求量）＝70×体重(kg)^0.75 に係数をかけます。係数は避妊去勢済み成犬1.6／未避妊1.8／子犬2.0〜3.0／高齢犬1.4、活動量補正0.9〜1.15（WSAVA Global Nutrition Guidelines／Ohio State VMC）。ミックス犬の体重は両親の成犬体重レンジの平均から推定した目安です。</p>
       </section>
 
       <section class="card" id="foodCard">
@@ -625,6 +632,7 @@ details.acc[open] summary::after{transform:rotate(180deg)}
           </div>
           <div class="cand-grid" id="candidates"></div>
           <p class="hint" style="margin-top:9px">候補にないフードは「フードを手入力する」を選び、パッケージのkcalを入れてください。候補のカロリーは目安です。パッケージ記載値を優先してください。</p>
+          <p class="basis-note"><b>根拠：</b>フードのカロリーは各メーカー公式ページの「代謝エネルギー」表示（2026年11月時点）。商品の改定で数値が変わるため、必ずお手持ちのパッケージ記載値を確認してください。</p>
         </div>
       </section>
 
@@ -641,6 +649,7 @@ details.acc[open] summary::after{transform:rotate(180deg)}
         <button type="button" class="btn btn-ghost add-treat" id="addTreat">＋ おやつを追加</button>
 
         <p class="mini-note" id="treatBudgetNote"></p>
+        <p class="basis-note"><b>根拠：</b>おやつ・トッピングなどの副食は、1日の必要カロリーの10%以内が目安（WSAVA Global Nutrition Guidelines）。残りの90%以上を総合栄養食で満たします。</p>
       </section>
 
       <section class="card" id="logCard">
@@ -2032,7 +2041,8 @@ function renderResult(c) {
       : '') +
     (state.breedMode === 'mix'
       ? '<p class="result-foot">※ ミックス犬の成犬体重は、両親の体重レンジから推定した目安です。個体差が大きいため、実際に測った体重を優先してください。</p>'
-      : '');
+      : '') +
+    '<p class="basis-note"><b>計算根拠：</b>RER＝70×体重(kg)^0.75。維持係数はWSAVA Global Nutrition Guidelines／Ohio State VMC、おやつ10%はWSAVA、減量・増量ペースはAAHA 2014 Weight Management Guidelinesに基づく目安です。</p>';
 
   $('#copyBtn').addEventListener('click', function () { copySummary(c); });
   $('#printBtn').addEventListener('click', function () { window.print(); });
@@ -2075,6 +2085,7 @@ function buildPlanHTML(c, meta) {
     '<div class="plan-cell span2"><span>到達の目安</span><b>' + monthsTxt(c.plan.dateFast, c.plan.dateSlow) + '</b></div>' +
     '</div>' +
     '<p class="plan-note" style="margin-top:10px">体重の1〜2%を1週間で変えるペース（目安）です。' + (loss ? '減量中は目標体重の安静時カロリー（RER）を目安に。' : '増量中は目標体重の維持カロリーの15%増を目安に。') + '途中で体重を測り、ペースを調整してください。</p>' +
+    '<p class="basis-note" style="border-top:0;padding-top:2px;margin-top:6px"><b>根拠：</b>AAHA 2014 Weight Management Guidelines（減量は週1〜2%を上限の目安）。</p>' +
     '</div>';
 }
 
